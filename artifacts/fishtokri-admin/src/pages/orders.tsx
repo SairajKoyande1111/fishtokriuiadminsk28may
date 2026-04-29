@@ -1977,16 +1977,16 @@ export default function Orders() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-white border-b border-gray-200 text-xs font-semibold text-black uppercase tracking-wide">
-                  <th className="px-3 py-3 text-left">Customer</th>
-                  <th className="px-3 py-3 text-left">Items</th>
-                  <th className="px-3 py-3 text-left">Total</th>
-                  <th className="px-3 py-3 text-left">Payment</th>
-                  <th className="px-3 py-3 text-left">Sub Hub</th>
-                  <th className="px-3 py-3 text-left">Time Slot</th>
-                  <th className="px-3 py-3 text-left">Location</th>
-                  <th className="px-3 py-3 text-left">Status</th>
-                  <th className="px-3 py-3 text-left">Operations</th>
-                  <th className="px-3 py-3 text-right">Actions</th>
+                  <th className="px-3 py-4 text-center">Customer</th>
+                  <th className="px-3 py-4 text-center">Items</th>
+                  <th className="px-3 py-4 text-center">Total</th>
+                  <th className="px-3 py-4 text-center">Payment</th>
+                  <th className="px-3 py-4 text-center">Sub Hub</th>
+                  <th className="px-3 py-4 text-center">Time Slot</th>
+                  <th className="px-3 py-4 text-center">Location</th>
+                  <th className="px-3 py-4 text-center">Status</th>
+                  <th className="px-3 py-4 text-center">Operations</th>
+                  <th className="px-3 py-4 text-center">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 bg-white">
@@ -1996,18 +1996,18 @@ export default function Orders() {
                   const slot = formatTimeSlot(o);
                   return (
                     <tr key={String(o._id)} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-3 py-3">
+                      <td className="px-3 py-4">
                         <p className="font-semibold text-black text-sm">{o.customerName}</p>
                         <p className="text-xs text-black">{o.phone}</p>
                         <p className="text-xs text-black mt-1 whitespace-nowrap">{formatDate(o.createdAt)}</p>
                       </td>
-                      <td className="px-3 py-3">
+                      <td className="px-3 py-4">
                         {items.length === 0 ? (
-                          <span className="text-xs text-black">—</span>
+                          <span className="text-sm text-black">—</span>
                         ) : (
                           <div className="space-y-0.5 max-w-[220px]">
                             {items.map((it: any, i: number) => (
-                              <p key={i} className="text-xs text-black truncate">
+                              <p key={i} className="text-sm text-black truncate">
                                 <span className="font-medium">{it.name}</span>
                                 <span> × {Number(it.quantity) || 1}</span>
                               </p>
@@ -2015,39 +2015,39 @@ export default function Orders() {
                           </div>
                         )}
                       </td>
-                      <td className="px-3 py-3">
-                        <span className="font-bold text-black">{formatRupees(total)}</span>
+                      <td className="px-3 py-4">
+                        <span className="font-bold text-black text-sm">{formatRupees(total)}</span>
                         {o.instantDeliveryCharge ? <p className="text-xs text-orange-600">+{formatRupees(o.instantDeliveryCharge)} delivery</p> : null}
                       </td>
-                      <td className="px-3 py-3"><PaymentBadge order={o} /></td>
-                      <td className="px-3 py-3">
+                      <td className="px-3 py-4"><PaymentBadge order={o} /></td>
+                      <td className="px-3 py-4">
                         {o.subHubName
-                          ? <span className="text-xs font-medium text-black">{o.subHubName}</span>
-                          : <span className="text-xs text-black">—</span>}
+                          ? <span className="text-sm font-medium text-black">{o.subHubName}</span>
+                          : <span className="text-sm text-black">—</span>}
                       </td>
-                      <td className="px-3 py-3">
+                      <td className="px-3 py-4">
                         {o.deliveryType === "takeaway" ? (
-                          <span className="text-xs text-black italic">Takeaway</span>
+                          <span className="text-sm text-black italic">Takeaway</span>
                         ) : slot ? (
-                          <span className="text-xs font-medium text-black whitespace-nowrap">{slot}</span>
+                          <span className="text-sm font-medium text-black whitespace-nowrap">{slot}</span>
                         ) : (
-                          <span className="text-xs text-black">—</span>
+                          <span className="text-sm text-black">—</span>
                         )}
                       </td>
-                      <td className="px-3 py-3">
+                      <td className="px-3 py-4">
                         {o.deliveryArea
-                          ? <span className="text-xs text-black">{o.deliveryArea}</span>
-                          : <span className="text-xs text-black">—</span>}
+                          ? <span className="text-sm text-black">{o.deliveryArea}</span>
+                          : <span className="text-sm text-black">—</span>}
                       </td>
-                      <td className="px-4 py-3"><SolidStatusBadge status={o.status} deliveryType={o.deliveryType} /></td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-4"><SolidStatusBadge status={o.status} deliveryType={o.deliveryType} /></td>
+                      <td className="px-4 py-4">
                         {o.status === "pending" ? (
                           <div className="flex items-center gap-1.5">
                             <button
                               type="button"
                               disabled={acceptingId === String(o._id)}
                               onClick={() => acceptOrder(o)}
-                              className="inline-flex items-center justify-center h-6 px-3 rounded-full text-[11px] font-semibold bg-green-600 hover:bg-green-700 text-white disabled:opacity-60"
+                              className="inline-flex items-center justify-center h-7 px-3 rounded-full text-xs font-semibold bg-green-600 hover:bg-green-700 text-white disabled:opacity-60"
                             >
                               Accept
                             </button>
@@ -2055,22 +2055,22 @@ export default function Orders() {
                               type="button"
                               disabled={acceptingId === String(o._id)}
                               onClick={() => { setRejectingOrder(o); setRejectReason(""); }}
-                              className="inline-flex items-center justify-center h-6 px-3 rounded-full text-[11px] font-semibold bg-red-600 hover:bg-red-700 text-white disabled:opacity-60"
+                              className="inline-flex items-center justify-center h-7 px-3 rounded-full text-xs font-semibold bg-red-600 hover:bg-red-700 text-white disabled:opacity-60"
                             >
                               Reject
                             </button>
                           </div>
                         ) : o.status === "cancelled" ? (
                           <div className="flex flex-col">
-                            <span className="text-xs font-semibold text-red-600">Rejected</span>
+                            <span className="text-sm font-semibold text-red-600">Rejected</span>
                             {o.cancellationReason && (
-                              <span className="text-[11px] text-black truncate max-w-[180px]" title={o.cancellationReason}>
+                              <span className="text-xs text-black truncate max-w-[180px]" title={o.cancellationReason}>
                                 {o.cancellationReason}
                               </span>
                             )}
                           </div>
                         ) : o.deliveryType === "takeaway" ? (
-                          <span className="text-xs text-gray-400 italic">Not required</span>
+                          <span className="text-sm text-gray-400 italic">Not required</span>
                         ) : deliveryPersons.length > 0 ? (
                           <InlineDeliverySelect
                             order={o}
@@ -2080,11 +2080,11 @@ export default function Orders() {
                           />
                         ) : (
                           o.assignedDeliveryPersonName
-                            ? <span className="text-xs font-medium text-orange-700">{o.assignedDeliveryPersonName}</span>
-                            : <span className="text-xs text-gray-300 italic">Unassigned</span>
+                            ? <span className="text-sm font-medium text-orange-700">{o.assignedDeliveryPersonName}</span>
+                            : <span className="text-sm text-gray-300 italic">Unassigned</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-4 py-4 text-center">
                         <div className="inline-flex items-center gap-1.5">
                           <button
                             title="View"
@@ -2094,23 +2094,23 @@ export default function Orders() {
                               setSelectedDeliveryPersonId(o.assignedDeliveryPersonId ?? "");
                               setShowAllPersons(false);
                             }}
-                            className="inline-flex items-center justify-center w-7 h-7 rounded-md hover:bg-brand-primary-50 transition-colors"
+                            className="inline-flex items-center justify-center w-8 h-8 rounded-md hover:bg-blue-50 transition-colors"
                           >
-                            <MaskIcon src={iconView} className="w-[18px] h-[18px]" />
+                            <MaskIcon src={iconView} color="#1A56DB" className="w-[18px] h-[18px]" />
                           </button>
                           <button
                             title="Edit"
                             onClick={() => openEditOrder(o)}
-                            className="inline-flex items-center justify-center w-7 h-7 rounded-md hover:bg-brand-primary-50 transition-colors"
+                            className="inline-flex items-center justify-center w-8 h-8 rounded-md hover:bg-blue-50 transition-colors"
                           >
-                            <MaskIcon src={iconEdit} className="w-[18px] h-[18px]" />
+                            <MaskIcon src={iconEdit} color="#1A56DB" className="w-[18px] h-[18px]" />
                           </button>
                           <button
                             title="Delete"
                             onClick={() => setDeletingOrder(o)}
-                            className="inline-flex items-center justify-center w-7 h-7 rounded-md hover:bg-brand-primary-50 transition-colors"
+                            className="inline-flex items-center justify-center w-8 h-8 rounded-md hover:bg-red-50 transition-colors"
                           >
-                            <MaskIcon src={iconDelete} className="w-[18px] h-[18px]" />
+                            <MaskIcon src={iconDelete} color="#1A56DB" className="w-[18px] h-[18px]" />
                           </button>
                         </div>
                       </td>
