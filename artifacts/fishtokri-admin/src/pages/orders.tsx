@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
+import { createPortal } from "react-dom";
 import {
   Search, X, RefreshCw, ClipboardList, Clock, CheckCircle2, XCircle,
   Truck, Package, ChevronLeft, ChevronRight, Eye, MapPin,
@@ -1612,44 +1613,51 @@ export default function Orders() {
     { key: "invoices" as const, label: "Order Invoices", count: invoiceCount, icon: FileText, color: "text-violet-600" },
   ];
 
+  // Inject title + subtitle + Refresh into the global top bar via a portal.
+  const [headerSlot, setHeaderSlot] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    if (isCreatePage) { setHeaderSlot(null); return; }
+    setHeaderSlot(document.getElementById("page-header-slot"));
+  }, [isCreatePage]);
+
   return (
-    <div className="space-y-4 w-full bg-white">
+    <div className="w-full bg-white">
+      {headerSlot && createPortal(
+        <>
+          <h1 className="text-lg font-bold text-[#162B4D] truncate">Orders</h1>
+          <p className="text-black text-sm truncate hidden sm:block">Track and manage all customer orders</p>
+          <div className="flex-1" />
+          <Button variant="outline" size="sm" onClick={() => { load(); loadStats(); }} className="h-8 gap-1.5 text-black">
+            <RefreshCw className="w-3.5 h-3.5" /> Refresh
+          </Button>
+        </>,
+        headerSlot
+      )}
+
       {!isCreatePage && (<>
-      {/* Header — title, tabs, refresh and new order all in a single horizontal row */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 pb-2">
-        <div className="flex items-baseline gap-3 flex-shrink-0">
-          <h1 className="text-2xl font-bold text-[#162B4D]">Orders</h1>
-          <p className="text-black text-sm">Track and manage all customer orders</p>
+      {/* Tabs row + New Order button */}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 pb-1">
+        <div className="flex items-center flex-wrap">
+          {TABS.map(({ key, label, count, icon: Icon, color }) => (
+            <button
+              key={key}
+              onClick={() => { setActiveTab(key); setStatusFilter(""); }}
+              className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold border-b-2 transition-colors ${
+                activeTab === key
+                  ? "border-[#1A56DB] text-[#1A56DB]"
+                  : "border-transparent text-black hover:text-[#1A56DB]"
+              }`}
+            >
+              <Icon className={`w-4 h-4 ${activeTab === key ? "text-[#1A56DB]" : color}`} />
+              {label}
+              <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${activeTab === key ? "bg-[#1A56DB] text-white" : "bg-gray-100 text-black"}`}>{count}</span>
+            </button>
+          ))}
         </div>
 
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex items-center">
-            {TABS.map(({ key, label, count, icon: Icon, color }) => (
-              <button
-                key={key}
-                onClick={() => { setActiveTab(key); setStatusFilter(""); }}
-                className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold border-b-2 transition-colors ${
-                  activeTab === key
-                    ? "border-[#1A56DB] text-[#1A56DB]"
-                    : "border-transparent text-black hover:text-[#1A56DB]"
-                }`}
-              >
-                <Icon className={`w-4 h-4 ${activeTab === key ? "text-[#1A56DB]" : color}`} />
-                {label}
-                <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${activeTab === key ? "bg-[#1A56DB] text-white" : "bg-gray-100 text-black"}`}>{count}</span>
-              </button>
-            ))}
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => { load(); loadStats(); }} className="h-8 gap-1.5 text-black">
-              <RefreshCw className="w-3.5 h-3.5" /> Refresh
-            </Button>
-            <Button size="sm" onClick={() => { resetCreateForm(); setLocation("/orders/new"); }} className="h-8 gap-1.5 bg-[#1A56DB] hover:bg-[#1447B4] text-white">
-              <Plus className="w-3.5 h-3.5" /> New Order
-            </Button>
-          </div>
-        </div>
+        <Button size="sm" onClick={() => { resetCreateForm(); setLocation("/orders/new"); }} className="h-8 gap-1.5 bg-[#1A56DB] hover:bg-[#1447B4] text-white">
+          <Plus className="w-3.5 h-3.5" /> New Order
+        </Button>
       </div>
 
       {/* Full-width content area (no card wrapper) */}

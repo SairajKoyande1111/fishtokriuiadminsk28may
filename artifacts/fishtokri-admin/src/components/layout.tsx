@@ -421,7 +421,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <span className="text-sm font-bold text-[#162B4D] truncate">{roleLabel}</span>
           </div>
 
-          <div className="flex-1" />
+          <div id="page-header-slot" className="flex items-center gap-3 flex-1 min-w-0" />
 
           <div className="flex items-center gap-2 min-w-0">
             <UserCircle className="w-4 h-4 text-gray-400 flex-shrink-0" />
@@ -439,7 +439,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </Button>
         </header>
 
-        <div className="p-4 sm:p-6 lg:p-8 flex-1 min-w-0">
+        <div className={`flex-1 min-w-0 bg-white ${location.startsWith("/orders") ? "px-4 py-3" : "p-4 sm:p-6 lg:p-8"}`}>
           {children}
         </div>
       </main>
