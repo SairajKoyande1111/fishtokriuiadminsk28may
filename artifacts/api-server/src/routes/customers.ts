@@ -87,6 +87,7 @@ const customerSchema = new mongoose.Schema(
     dateOfBirth: String,
     gender: String,
     notes: String,
+    customerNumber: { type: Number, default: null },
     addresses: { type: Array, default: [] },
     orders: { type: Array, default: [] },
     usedCoupons: { type: Array, default: [] },
@@ -103,6 +104,7 @@ async function getCustomerModel() {
 function serializeCustomer(doc: any) {
   return {
     id: String(doc._id),
+    customerNumber: doc.customerNumber ?? null,
     name: doc.name ?? "",
     email: doc.email ?? "",
     phone: doc.phone ?? "",
@@ -116,6 +118,25 @@ function serializeCustomer(doc: any) {
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt,
   };
+}
+
+let _migrationDone = false;
+async function ensureCustomerNumbers(): Promise<void> {
+  if (_migrationDone) return;
+  try {
+    const Customer = await getCustomerModel();
+    const unassigned = await Customer.countDocuments({ customerNumber: { $in: [null, undefined] } });
+    if (unassigned > 0) {
+      const maxDoc = await Customer.findOne({ customerNumber: { $ne: null } }).sort({ customerNumber: -1 }) as any;
+      let next = (maxDoc?.customerNumber ?? 0) + 1;
+      const docs = await Customer.find({ customerNumber: { $in: [null, undefined] } }).sort({ createdAt: 1 }).select("_id") as any[];
+      const ops = docs.map((d: any) => ({
+        updateOne: { filter: { _id: d._id }, update: { $set: { customerNumber: next++ } } },
+      }));
+      if (ops.length) await Customer.bulkWrite(ops as any);
+    }
+    _migrationDone = true;
+  } catch (_) {}
 }
 
 function sanitizeAddresses(addresses: any): any[] {
@@ -259,6 +280,7 @@ async function enrichCustomers(customers: any[], log?: any) {
 
 router.get("/", async (req: ScopedRequest, res) => {
   try {
+    await ensureCustomerNumbers();
     const Customer = await getCustomerModel();
     const { search, sort = "createdAt_desc", page = "1", limit = "20" } = req.query as Record<string, string>;
 
@@ -365,6 +387,9 @@ router.post("/", async (req, res) => {
       }
     }
 
+    const maxDoc = await Customer.findOne({ customerNumber: { $ne: null } }).sort({ customerNumber: -1 }) as any;
+    const nextNumber = (maxDoc?.customerNumber ?? 0) + 1;
+
     const customer = await Customer.create({
       name: String(name).trim(),
       email: emailTrim || null,
@@ -373,6 +398,7 @@ router.post("/", async (req, res) => {
       dateOfBirth: dateOfBirth ?? null,
       gender: gender ?? "",
       notes: notes ?? "",
+      customerNumber: nextNumber,
       addresses: sanitizeAddresses(addresses),
       orders: [],
     });

@@ -6,7 +6,6 @@ import {
   MapPin, ShoppingBag, ChevronLeft, ChevronRight, Users,
   Home, Clock, CheckCircle2, ClipboardList, Package,
   CreditCard, Truck, UserRound, ChevronDown, ChevronUp, Tag,
-  Filter,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -17,9 +16,6 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -60,6 +56,7 @@ const ACTIVE_ORDER_STATUSES = new Set(["pending", "confirmed", "preparing", "out
 
 interface Customer {
   id: string;
+  customerNumber?: number | null;
   name: string;
   email: string;
   phone: string;
@@ -191,6 +188,11 @@ function formatRupees(value: any) {
   return `₹${n.toLocaleString("en-IN")}`;
 }
 
+function formatCustomerCode(customerNumber?: number | null) {
+  if (!customerNumber) return "—";
+  return `CUSFT${String(customerNumber).padStart(2, "0")}`;
+}
+
 function normalize(value: any) {
   return String(value ?? "").trim().toLowerCase();
 }
@@ -316,25 +318,15 @@ export default function Customers() {
   });
 
   const hasFilters = !!(
-    debouncedSearch ||
-    sort !== "createdAt_desc" ||
-    filterOrders !== "all" ||
-    filterEmail !== "all" ||
-    filterAddr !== "all" ||
-    filterJoinedFrom ||
-    filterJoinedTo
+    debouncedSearch || sort !== "createdAt_desc" ||
+    filterOrders !== "all" || filterEmail !== "all" ||
+    filterAddr !== "all" || filterJoinedFrom || filterJoinedTo
   );
 
   const clearFilters = () => {
-    setSearch("");
-    setDebouncedSearch("");
-    setSort("createdAt_desc");
-    setFilterOrders("all");
-    setFilterEmail("all");
-    setFilterAddr("all");
-    setFilterJoinedFrom("");
-    setFilterJoinedTo("");
-    setPage(1);
+    setSearch(""); setDebouncedSearch(""); setSort("createdAt_desc");
+    setFilterOrders("all"); setFilterEmail("all"); setFilterAddr("all");
+    setFilterJoinedFrom(""); setFilterJoinedTo(""); setPage(1);
   };
 
   const openEdit = (customer: Customer) => {
@@ -357,10 +349,10 @@ export default function Customers() {
     <div style={{ fontFamily: "'Poppins', sans-serif" }}>
       <div className="flex items-start justify-between gap-4 mb-5">
         <div>
-          <h1 className="text-2xl font-bold text-[#162B4D]">Customers</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
+          <h1 className="text-2xl font-bold text-black">Customers</h1>
+          <p className="text-sm text-black mt-0.5">
             Manage all registered customers with saved addresses, current orders and order history.
-            {total > 0 && <span className="font-semibold text-[#162B4D] ml-1">{total} total</span>}
+            {total > 0 && <span className="font-bold ml-1">{total} total</span>}
           </p>
         </div>
         <Button
@@ -379,7 +371,7 @@ export default function Customers() {
             placeholder="Search by name, email or phone..."
             value={search}
             onChange={(e) => handleSearchChange(e.target.value)}
-            className="pl-9 bg-white border-gray-200 h-9 text-sm"
+            className="pl-9 bg-white border-gray-200 h-9 text-sm text-black"
           />
           {search && (
             <button onClick={() => handleSearchChange("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
@@ -389,8 +381,8 @@ export default function Customers() {
         </div>
 
         <Select value={sort} onValueChange={(v) => { setSort(v); setPage(1); }}>
-          <SelectTrigger className="h-9 w-40 text-sm border-gray-200 bg-white">
-            <ArrowUpDown className="w-3.5 h-3.5 text-gray-400 mr-1.5 flex-shrink-0" />
+          <SelectTrigger className="h-9 w-40 text-sm border-gray-200 bg-white text-black">
+            <ArrowUpDown className="w-3.5 h-3.5 text-gray-500 mr-1.5 flex-shrink-0" />
             <SelectValue placeholder="Sort by" />
           </SelectTrigger>
           <SelectContent>
@@ -404,8 +396,8 @@ export default function Customers() {
         </Select>
 
         <Select value={filterOrders} onValueChange={(v: any) => { setFilterOrders(v); setPage(1); }}>
-          <SelectTrigger className="h-9 w-36 text-sm border-gray-200 bg-white">
-            <ShoppingBag className="w-3.5 h-3.5 text-gray-400 mr-1.5 flex-shrink-0" />
+          <SelectTrigger className="h-9 w-36 text-sm border-gray-200 bg-white text-black">
+            <ShoppingBag className="w-3.5 h-3.5 text-gray-500 mr-1.5 flex-shrink-0" />
             <SelectValue placeholder="Orders" />
           </SelectTrigger>
           <SelectContent>
@@ -416,8 +408,8 @@ export default function Customers() {
         </Select>
 
         <Select value={filterEmail} onValueChange={(v: any) => { setFilterEmail(v); setPage(1); }}>
-          <SelectTrigger className="h-9 w-32 text-sm border-gray-200 bg-white">
-            <Mail className="w-3.5 h-3.5 text-gray-400 mr-1.5 flex-shrink-0" />
+          <SelectTrigger className="h-9 w-32 text-sm border-gray-200 bg-white text-black">
+            <Mail className="w-3.5 h-3.5 text-gray-500 mr-1.5 flex-shrink-0" />
             <SelectValue placeholder="Email" />
           </SelectTrigger>
           <SelectContent>
@@ -428,8 +420,8 @@ export default function Customers() {
         </Select>
 
         <Select value={filterAddr} onValueChange={(v: any) => { setFilterAddr(v); setPage(1); }}>
-          <SelectTrigger className="h-9 w-36 text-sm border-gray-200 bg-white">
-            <MapPin className="w-3.5 h-3.5 text-gray-400 mr-1.5 flex-shrink-0" />
+          <SelectTrigger className="h-9 w-36 text-sm border-gray-200 bg-white text-black">
+            <MapPin className="w-3.5 h-3.5 text-gray-500 mr-1.5 flex-shrink-0" />
             <SelectValue placeholder="Address" />
           </SelectTrigger>
           <SelectContent>
@@ -441,7 +433,7 @@ export default function Customers() {
 
         <button
           onClick={() => setShowDateFilters((v) => !v)}
-          className={`h-9 px-3 flex items-center gap-1.5 text-sm border rounded-md transition-colors ${showDateFilters || filterJoinedFrom || filterJoinedTo ? "border-[#1A56DB] bg-blue-50 text-[#1A56DB]" : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"}`}
+          className={`h-9 px-3 flex items-center gap-1.5 text-sm border rounded-md transition-colors ${showDateFilters || filterJoinedFrom || filterJoinedTo ? "border-[#1A56DB] bg-blue-50 text-[#1A56DB]" : "border-gray-200 bg-white text-black hover:bg-gray-50"}`}
         >
           <Calendar className="w-3.5 h-3.5" />
           Joined
@@ -449,21 +441,9 @@ export default function Customers() {
 
         {showDateFilters && (
           <div className="flex items-center gap-2 flex-wrap">
-            <Input
-              type="date"
-              value={filterJoinedFrom}
-              onChange={(e) => { setFilterJoinedFrom(e.target.value); setPage(1); }}
-              className="h-9 w-36 text-sm border-gray-200 bg-white"
-              placeholder="From"
-            />
-            <span className="text-xs text-gray-400">to</span>
-            <Input
-              type="date"
-              value={filterJoinedTo}
-              onChange={(e) => { setFilterJoinedTo(e.target.value); setPage(1); }}
-              className="h-9 w-36 text-sm border-gray-200 bg-white"
-              placeholder="To"
-            />
+            <Input type="date" value={filterJoinedFrom} onChange={(e) => { setFilterJoinedFrom(e.target.value); setPage(1); }} className="h-9 w-36 text-sm border-gray-200 bg-white text-black" />
+            <span className="text-xs text-black">to</span>
+            <Input type="date" value={filterJoinedTo} onChange={(e) => { setFilterJoinedTo(e.target.value); setPage(1); }} className="h-9 w-36 text-sm border-gray-200 bg-white text-black" />
           </div>
         )}
 
@@ -475,12 +455,12 @@ export default function Customers() {
         )}
 
         <div className="ml-auto flex items-center gap-2">
-          <span className="text-xs text-gray-400 font-medium">{filteredCustomers.length} of {total}</span>
+          <span className="text-xs text-black font-medium">{filteredCustomers.length} of {total}</span>
           <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden bg-white">
-            <button onClick={() => setViewMode("list")} className={`w-8 h-8 flex items-center justify-center transition-colors ${viewMode === "list" ? "bg-[#162B4D] text-white" : "text-gray-400 hover:bg-gray-50"}`} title="List view">
+            <button onClick={() => setViewMode("list")} className={`w-8 h-8 flex items-center justify-center transition-colors ${viewMode === "list" ? "bg-[#162B4D] text-white" : "text-black hover:bg-gray-50"}`} title="List view">
               <LayoutList className="w-3.5 h-3.5" />
             </button>
-            <button onClick={() => setViewMode("grid")} className={`w-8 h-8 flex items-center justify-center transition-colors ${viewMode === "grid" ? "bg-[#162B4D] text-white" : "text-gray-400 hover:bg-gray-50"}`} title="Grid view">
+            <button onClick={() => setViewMode("grid")} className={`w-8 h-8 flex items-center justify-center transition-colors ${viewMode === "grid" ? "bg-[#162B4D] text-white" : "text-black hover:bg-gray-50"}`} title="Grid view">
               <LayoutGrid className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -490,7 +470,7 @@ export default function Customers() {
       {viewMode === "grid" ? (
         isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {[1, 2, 3, 4, 5, 6].map((i) => <Skeleton key={i} className="h-52 rounded-xl" />)}
+            {[1, 2, 3, 4, 5, 6].map((i) => <Skeleton key={i} className="h-48 rounded-xl" />)}
           </div>
         ) : filteredCustomers.length === 0 ? (
           <EmptyState search={debouncedSearch} />
@@ -508,156 +488,100 @@ export default function Customers() {
           </div>
         )
       ) : (
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
           {isLoading ? (
-            <div className="p-6 space-y-4">
+            <div className="p-4 space-y-3">
               {[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-14 w-full rounded-lg" />)}
             </div>
+          ) : filteredCustomers.length === 0 ? (
+            <div className="py-20 text-center">
+              <Users className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+              <p className="text-black font-medium">{debouncedSearch ? `No customers found for "${debouncedSearch}".` : "No customers found."}</p>
+            </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-gray-50/60 hover:bg-gray-50/60 border-gray-100">
-                  <TableHead className="text-xs font-semibold text-gray-500 uppercase tracking-wider py-3 pl-4">Customer</TableHead>
-                  <TableHead className="text-xs font-semibold text-gray-500 uppercase tracking-wider py-3">Contact</TableHead>
-                  <TableHead className="text-xs font-semibold text-gray-500 uppercase tracking-wider py-3">Date of Birth</TableHead>
-                  <TableHead className="text-xs font-semibold text-gray-500 uppercase tracking-wider py-3">Addresses</TableHead>
-                  <TableHead className="text-xs font-semibold text-gray-500 uppercase tracking-wider py-3">Active Orders</TableHead>
-                  <TableHead className="text-xs font-semibold text-gray-500 uppercase tracking-wider py-3">Order History</TableHead>
-                  <TableHead className="text-xs font-semibold text-gray-500 uppercase tracking-wider py-3">Joined</TableHead>
-                  <TableHead className="text-right text-xs font-semibold text-gray-500 uppercase tracking-wider py-3 pr-4">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredCustomers.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={8} className="text-center py-16 text-gray-400 text-sm">
-                      <div className="flex flex-col items-center gap-2">
-                        <Users className="w-8 h-8 text-gray-300" />
-                        <p>No customers found{debouncedSearch ? ` for "${debouncedSearch}"` : ""}.</p>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredCustomers.map((c) => {
-                    const { current, history } = splitOrders(c);
-                    return (
-                      <TableRow key={c.id} className="hover:bg-gray-50/50 border-gray-100">
-                        <TableCell className="py-3.5 pl-4">
-                          <div className="flex items-center gap-3">
-                            <Avatar className="h-9 w-9 flex-shrink-0">
-                              <AvatarFallback className={`text-sm font-bold ${getAvatarColor(c.name || "?")}`}>
-                                {c.name ? getInitials(c.name) : "?"}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <p className="font-semibold text-[#162B4D] text-sm">{c.name || "—"}</p>
-                              <p className="text-[11px] text-gray-400 mt-0.5">ID: {c.id?.slice(-8)}</p>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="py-3.5">
-                          <div className="space-y-0.5">
-                            {c.email ? (
-                              <div className="flex items-center gap-1 text-gray-600 text-xs"><Mail className="w-3 h-3 flex-shrink-0 text-gray-400" /><span>{c.email}</span></div>
-                            ) : (
-                              <span className="text-xs text-gray-300 italic">No email</span>
-                            )}
-                            {c.phone && <div className="flex items-center gap-1 text-gray-500 text-xs"><Phone className="w-3 h-3 flex-shrink-0 text-gray-400" /><span>{c.phone}</span></div>}
-                          </div>
-                        </TableCell>
-                        <TableCell className="py-3.5">
-                          <span className="text-xs text-gray-600">{c.dateOfBirth || <span className="text-gray-300">—</span>}</span>
-                        </TableCell>
-                        <TableCell className="py-3.5">
-                          <CounterBadge count={c.addresses?.length ?? 0} className={c.addresses?.length ? "bg-blue-50 text-blue-700" : "bg-gray-50 text-gray-400"} />
-                        </TableCell>
-                        <TableCell className="py-3.5">
-                          <CounterBadge count={current.length} className={current.length ? "bg-indigo-50 text-indigo-700" : "bg-gray-50 text-gray-400"} />
-                        </TableCell>
-                        <TableCell className="py-3.5">
-                          <CounterBadge count={history.length} className={history.length ? "bg-amber-50 text-amber-700" : "bg-gray-50 text-gray-400"} />
-                        </TableCell>
-                        <TableCell className="py-3.5 text-xs text-gray-600">{formatDate(c.createdAt)}</TableCell>
-                        <TableCell className="py-3.5 pr-4 text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <button
-                              onClick={() => setDetailCustomerId(c.id)}
-                              className="inline-flex items-center justify-center w-8 h-8 rounded-md hover:bg-blue-50 transition-colors"
-                              title="View details"
-                            >
-                              <MaskIcon src={iconView} color="#1A56DB" className="w-[18px] h-[18px]" />
-                            </button>
-                            <button
-                              onClick={() => openEdit(c)}
-                              className="inline-flex items-center justify-center w-8 h-8 rounded-md hover:bg-blue-50 transition-colors"
-                              title="Edit"
-                            >
-                              <MaskIcon src={iconEdit} color="#1A56DB" className="w-[18px] h-[18px]" />
-                            </button>
-                            <button
-                              onClick={() => setDeleteCustomerId(c.id)}
-                              className="inline-flex items-center justify-center w-8 h-8 rounded-md hover:bg-red-50 transition-colors"
-                              title="Delete"
-                            >
-                              <MaskIcon src={iconDelete} color="#E02424" className="w-[18px] h-[18px]" />
-                            </button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
-                )}
-              </TableBody>
-            </Table>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-200 text-xs font-semibold text-black uppercase tracking-wide">
+                  <th className="px-3 py-4 text-left">Customer</th>
+                  <th className="px-3 py-4 text-left">Contact</th>
+                  <th className="px-3 py-4 text-center">Addresses</th>
+                  <th className="px-3 py-4 text-center">Active Orders</th>
+                  <th className="px-3 py-4 text-center">Order History</th>
+                  <th className="px-3 py-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 bg-white">
+                {filteredCustomers.map((c) => {
+                  const { current, history } = splitOrders(c);
+                  const code = formatCustomerCode(c.customerNumber);
+                  return (
+                    <tr key={c.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-3 py-4">
+                        <p className="font-semibold text-black text-sm">{c.name || "—"}</p>
+                        <p className="text-xs text-black mt-0.5">{code}</p>
+                        <p className="text-xs text-black mt-0.5">{formatDate(c.createdAt)}</p>
+                      </td>
+                      <td className="px-3 py-4">
+                        <p className="text-sm font-medium text-black">{c.phone || "N.A"}</p>
+                        <p className="text-xs text-black mt-0.5">{c.email || "N.A"}</p>
+                        <p className="text-xs text-black mt-0.5">{c.dateOfBirth || "N.A"}</p>
+                      </td>
+                      <td className="px-3 py-4 text-center">
+                        <CountBadge count={c.addresses?.length ?? 0} />
+                      </td>
+                      <td className="px-3 py-4 text-center">
+                        <CountBadge count={current.length} activeColor />
+                      </td>
+                      <td className="px-3 py-4 text-center">
+                        <CountBadge count={history.length} historyColor />
+                      </td>
+                      <td className="px-3 py-4 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            onClick={() => setDetailCustomerId(c.id)}
+                            className="inline-flex items-center justify-center w-8 h-8 rounded-md hover:bg-blue-50 transition-colors"
+                            title="View details"
+                          >
+                            <MaskIcon src={iconView} color="#1A56DB" className="w-[18px] h-[18px]" />
+                          </button>
+                          <button
+                            onClick={() => openEdit(c)}
+                            className="inline-flex items-center justify-center w-8 h-8 rounded-md hover:bg-blue-50 transition-colors"
+                            title="Edit"
+                          >
+                            <MaskIcon src={iconEdit} color="#1A56DB" className="w-[18px] h-[18px]" />
+                          </button>
+                          <button
+                            onClick={() => setDeleteCustomerId(c.id)}
+                            className="inline-flex items-center justify-center w-8 h-8 rounded-md hover:bg-red-50 transition-colors"
+                            title="Delete"
+                          >
+                            <MaskIcon src={iconDelete} color="#E02424" className="w-[18px] h-[18px]" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           )}
         </div>
       )}
 
       {!isLoading && totalPages > 1 && (
         <div className="flex items-center justify-between mt-4">
-          <p className="text-sm text-gray-500">Page {page} of {totalPages} &mdash; {total} customers</p>
+          <p className="text-sm text-black">Page {page} of {totalPages} &mdash; {total} customers</p>
           <div className="flex items-center gap-1.5">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage(1)}
-              disabled={page === 1}
-              className="h-8 w-8 p-0 text-xs"
-            >
-              «
+            <Button variant="outline" size="sm" onClick={() => setPage(1)} disabled={page === 1} className="h-8 w-8 p-0 text-xs text-black">«</Button>
+            <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} className="h-8 px-3 text-sm text-black">
+              <ChevronLeft className="w-3.5 h-3.5 mr-1" />Prev
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="h-8 px-3 text-sm"
-            >
-              <ChevronLeft className="w-3.5 h-3.5 mr-1" />
-              Prev
+            <span className="h-8 px-3 flex items-center justify-center text-sm font-semibold text-black bg-white border border-gray-200 rounded-md min-w-[36px]">{page}</span>
+            <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="h-8 px-3 text-sm text-black">
+              Next<ChevronRight className="w-3.5 h-3.5 ml-1" />
             </Button>
-            <span className="h-8 px-3 flex items-center justify-center text-sm font-semibold text-[#162B4D] bg-white border border-gray-200 rounded-md min-w-[36px]">
-              {page}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-              className="h-8 px-3 text-sm"
-            >
-              Next
-              <ChevronRight className="w-3.5 h-3.5 ml-1" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage(totalPages)}
-              disabled={page === totalPages}
-              className="h-8 w-8 p-0 text-xs"
-            >
-              »
-            </Button>
+            <Button variant="outline" size="sm" onClick={() => setPage(totalPages)} disabled={page === totalPages} className="h-8 w-8 p-0 text-xs text-black">»</Button>
           </div>
         </div>
       )}
@@ -678,11 +602,75 @@ export default function Customers() {
   );
 }
 
+function CountBadge({ count, activeColor, historyColor }: { count: number; activeColor?: boolean; historyColor?: boolean }) {
+  if (count === 0) return <span className="text-sm text-black">0</span>;
+  const cls = activeColor
+    ? "bg-indigo-50 text-indigo-700 border border-indigo-100"
+    : historyColor
+    ? "bg-amber-50 text-amber-700 border border-amber-100"
+    : "bg-blue-50 text-blue-700 border border-blue-100";
+  return (
+    <span className={`inline-flex items-center justify-center min-w-[28px] px-2 py-0.5 rounded text-xs font-semibold ${cls}`}>
+      {count}
+    </span>
+  );
+}
+
+function EmptyState({ search }: { search: string }) {
+  return (
+    <div className="py-20 text-center">
+      <Users className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+      <p className="text-black font-medium">{search ? `No customers match "${search}"` : "No customers yet."}</p>
+    </div>
+  );
+}
+
+function CustomerCard({ customer: c, onView, onEdit, onDelete }: { customer: Customer; onView: () => void; onEdit: () => void; onDelete: () => void }) {
+  const { current, history } = splitOrders(c);
+  const code = formatCustomerCode(c.customerNumber);
+  return (
+    <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex flex-col gap-3 hover:shadow-md transition-shadow">
+      <div>
+        <p className="font-semibold text-black text-sm">{c.name || "—"}</p>
+        <p className="text-xs text-black mt-0.5">{code}</p>
+        <p className="text-xs text-black mt-0.5">{formatDate(c.createdAt)}</p>
+      </div>
+      <div className="space-y-1">
+        <div className="text-sm font-medium text-black">{c.phone || "N.A"}</div>
+        <div className="text-xs text-black">{c.email || "N.A"}</div>
+        <div className="text-xs text-black">{c.dateOfBirth || "N.A"}</div>
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        <MiniStat label="Addrs" value={c.addresses?.length ?? 0} />
+        <MiniStat label="Active" value={current.length} />
+        <MiniStat label="History" value={history.length} />
+      </div>
+      <div className="pt-2 border-t border-gray-100 flex items-center justify-end gap-1">
+        <button onClick={onView} className="inline-flex items-center justify-center w-8 h-8 rounded-md hover:bg-blue-50 transition-colors" title="View details">
+          <MaskIcon src={iconView} color="#1A56DB" className="w-[18px] h-[18px]" />
+        </button>
+        <button onClick={onEdit} className="inline-flex items-center justify-center w-8 h-8 rounded-md hover:bg-blue-50 transition-colors" title="Edit">
+          <MaskIcon src={iconEdit} color="#1A56DB" className="w-[18px] h-[18px]" />
+        </button>
+        <button onClick={onDelete} className="inline-flex items-center justify-center w-8 h-8 rounded-md hover:bg-red-50 transition-colors" title="Delete">
+          <MaskIcon src={iconDelete} color="#E02424" className="w-[18px] h-[18px]" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function MiniStat({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-lg bg-gray-50 p-2">
+      <p className="text-sm font-bold text-black">{value}</p>
+      <p className="text-[10px] text-black truncate">{label}</p>
+    </div>
+  );
+}
+
 function CustomerDetailPage({
-  customerId,
-  onBack,
-  onEdit,
-  onDelete,
+  customerId, onBack, onEdit, onDelete,
 }: {
   customerId: string;
   onBack: () => void;
@@ -716,7 +704,7 @@ function CustomerDetailPage({
           <div className="flex items-center gap-2">
             <button
               onClick={() => onEdit(fullCustomer)}
-              className="inline-flex items-center gap-1.5 h-8 px-3 text-xs font-medium rounded-md border border-gray-200 bg-white text-gray-700 hover:bg-blue-50 hover:border-blue-200 hover:text-[#1A56DB] transition-colors"
+              className="inline-flex items-center gap-1.5 h-8 px-3 text-xs font-medium rounded-md border border-gray-200 bg-white text-black hover:bg-blue-50 hover:border-blue-200 hover:text-[#1A56DB] transition-colors"
             >
               <MaskIcon src={iconEdit} color="#1A56DB" className="w-[14px] h-[14px]" />
               Edit Customer
@@ -735,11 +723,8 @@ function CustomerDetailPage({
       {isLoading ? (
         <div className="space-y-4">
           <Skeleton className="h-32 rounded-2xl" />
-          <div className="grid grid-cols-5 gap-3">
-            {[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-20 rounded-xl" />)}
-          </div>
+          <div className="grid grid-cols-5 gap-3">{[1,2,3,4,5].map((i) => <Skeleton key={i} className="h-20 rounded-xl" />)}</div>
           <Skeleton className="h-40 rounded-2xl" />
-          <Skeleton className="h-36 rounded-2xl" />
         </div>
       ) : error ? (
         <div className="rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm p-4">
@@ -756,28 +741,16 @@ function CustomerDetailPage({
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <h2 className="text-xl font-bold text-[#162B4D]">{fullCustomer.name || "Unnamed customer"}</h2>
-                  <div className="mt-1.5 flex flex-wrap gap-x-5 gap-y-1 text-sm text-gray-600">
-                    <span className="inline-flex items-center gap-1.5">
-                      <Phone className="w-3.5 h-3.5 text-gray-400" />
-                      {fullCustomer.phone || "No phone"}
-                    </span>
-                    {fullCustomer.email && (
-                      <span className="inline-flex items-center gap-1.5">
-                        <Mail className="w-3.5 h-3.5 text-gray-400" />
-                        {fullCustomer.email}
-                      </span>
-                    )}
+                  <h2 className="text-xl font-bold text-black">{fullCustomer.name || "Unnamed customer"}</h2>
+                  <p className="text-sm font-semibold text-black mt-0.5">{formatCustomerCode(fullCustomer.customerNumber)}</p>
+                  <div className="mt-1.5 flex flex-wrap gap-x-5 gap-y-1 text-sm text-black">
+                    <span className="inline-flex items-center gap-1.5"><Phone className="w-3.5 h-3.5 text-gray-400" />{fullCustomer.phone || "N.A"}</span>
+                    <span className="inline-flex items-center gap-1.5"><Mail className="w-3.5 h-3.5 text-gray-400" />{fullCustomer.email || "N.A"}</span>
                     {fullCustomer.dateOfBirth && (
-                      <span className="inline-flex items-center gap-1.5">
-                        <Calendar className="w-3.5 h-3.5 text-gray-400" />
-                        DOB: {fullCustomer.dateOfBirth}
-                      </span>
+                      <span className="inline-flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 text-gray-400" />DOB: {fullCustomer.dateOfBirth}</span>
                     )}
                   </div>
-                  <p className="mt-1.5 text-xs text-gray-400">
-                    Customer since {formatDate(fullCustomer.createdAt)}&nbsp;&nbsp;·&nbsp;&nbsp;ID: {fullCustomer.id}
-                  </p>
+                  <p className="mt-1.5 text-xs text-black">Customer since {formatDate(fullCustomer.createdAt)}</p>
                 </div>
               </div>
             </div>
@@ -794,8 +767,9 @@ function CustomerDetailPage({
           <DetailSection title="Personal & Account Details" icon={UserRound}>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               <InfoRow label="Name" value={fullCustomer.name} />
-              <InfoRow label="Email" value={fullCustomer.email} />
+              <InfoRow label="Customer ID" value={formatCustomerCode(fullCustomer.customerNumber)} />
               <InfoRow label="Phone" value={fullCustomer.phone} />
+              <InfoRow label="Email" value={fullCustomer.email} />
               <InfoRow label="Date of Birth" value={fullCustomer.dateOfBirth} />
               <InfoRow label="Created" value={formatDateTime(fullCustomer.createdAt)} />
               <InfoRow label="Updated" value={formatDateTime(fullCustomer.updatedAt)} />
@@ -829,77 +803,12 @@ function CustomerDetailPage({
   );
 }
 
-function CounterBadge({ count, className }: { count: number; className: string }) {
-  return (
-    <span className={`inline-flex items-center justify-center min-w-[28px] px-2 py-0.5 rounded text-xs font-semibold ${className}`}>
-      {count}
-    </span>
-  );
-}
-
-function EmptyState({ search }: { search: string }) {
-  return (
-    <div className="bg-white rounded-xl border border-dashed border-gray-200 py-20 text-center">
-      <Users className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-      <p className="text-gray-500 font-medium">{search ? `No customers match "${search}"` : "No customers yet."}</p>
-    </div>
-  );
-}
-
-function CustomerCard({ customer: c, onView, onEdit, onDelete }: { customer: Customer; onView: () => void; onEdit: () => void; onDelete: () => void }) {
-  const { current, history } = splitOrders(c);
-  return (
-    <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex flex-col gap-3 hover:shadow-md transition-shadow">
-      <div className="flex items-start gap-3">
-        <Avatar className="h-10 w-10 flex-shrink-0">
-          <AvatarFallback className={`text-sm font-bold ${getAvatarColor(c.name || "?")}`}>{c.name ? getInitials(c.name) : "?"}</AvatarFallback>
-        </Avatar>
-        <div className="min-w-0 flex-1">
-          <p className="font-semibold text-[#162B4D] text-sm truncate">{c.name || "—"}</p>
-          <p className="text-xs text-gray-400 mt-0.5">{formatDate(c.createdAt)}</p>
-        </div>
-      </div>
-      <div className="space-y-1">
-        {c.email && <div className="flex items-center gap-1.5 text-gray-500 text-xs"><Mail className="w-3 h-3 flex-shrink-0" /><span className="truncate">{c.email}</span></div>}
-        {c.phone && <div className="flex items-center gap-1.5 text-gray-400 text-xs"><Phone className="w-3 h-3 flex-shrink-0" /><span>{c.phone}</span></div>}
-        {c.dateOfBirth && <div className="flex items-center gap-1.5 text-gray-400 text-xs"><Calendar className="w-3 h-3 flex-shrink-0" /><span>{c.dateOfBirth}</span></div>}
-      </div>
-      <div className="grid grid-cols-3 gap-2">
-        <MiniStat label="Addresses" value={c.addresses?.length ?? 0} icon={MapPin} />
-        <MiniStat label="Active" value={current.length} icon={Clock} />
-        <MiniStat label="History" value={history.length} icon={ShoppingBag} />
-      </div>
-      <div className="pt-2 border-t border-gray-100 flex items-center justify-end gap-1">
-        <button onClick={onView} className="inline-flex items-center justify-center w-8 h-8 rounded-md hover:bg-blue-50 transition-colors" title="View details">
-          <MaskIcon src={iconView} color="#1A56DB" className="w-[18px] h-[18px]" />
-        </button>
-        <button onClick={onEdit} className="inline-flex items-center justify-center w-8 h-8 rounded-md hover:bg-blue-50 transition-colors" title="Edit">
-          <MaskIcon src={iconEdit} color="#1A56DB" className="w-[18px] h-[18px]" />
-        </button>
-        <button onClick={onDelete} className="inline-flex items-center justify-center w-8 h-8 rounded-md hover:bg-red-50 transition-colors" title="Delete">
-          <MaskIcon src={iconDelete} color="#E02424" className="w-[18px] h-[18px]" />
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function MiniStat({ label, value, icon: Icon }: { label: string; value: number; icon: any }) {
-  return (
-    <div className="rounded-lg bg-gray-50 p-2">
-      <Icon className="w-3.5 h-3.5 text-gray-400 mb-1" />
-      <p className="text-sm font-bold text-[#162B4D]">{value}</p>
-      <p className="text-[10px] text-gray-400 truncate">{label}</p>
-    </div>
-  );
-}
-
 function SummaryCard({ label, value, icon: Icon, color }: { label: string; value: any; icon: any; color: string }) {
   return (
     <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
       <Icon className={`w-4 h-4 ${color} mb-2`} />
-      <p className="text-lg font-bold text-[#162B4D]">{value}</p>
-      <p className="text-xs text-gray-400 font-medium">{label}</p>
+      <p className="text-lg font-bold text-black">{value}</p>
+      <p className="text-xs text-black font-medium">{label}</p>
     </div>
   );
 }
@@ -907,7 +816,7 @@ function SummaryCard({ label, value, icon: Icon, color }: { label: string; value
 function DetailSection({ title, icon: Icon, children }: { title: string; icon: any; children: React.ReactNode }) {
   return (
     <section className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-      <h4 className="flex items-center gap-2 text-sm font-bold text-[#162B4D] mb-4">
+      <h4 className="flex items-center gap-2 text-sm font-bold text-black mb-4">
         <Icon className="w-4 h-4 text-[#1A56DB]" />
         {title}
       </h4>
@@ -920,14 +829,9 @@ function CollapsibleDetailSection({ title, icon: Icon, children, defaultOpen = t
   const [open, setOpen] = useState(defaultOpen);
   return (
     <section className="bg-white rounded-2xl border border-gray-100 shadow-sm">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between gap-2 p-5 text-left"
-      >
-        <h4 className="flex items-center gap-2 text-sm font-bold text-[#162B4D]">
-          <Icon className="w-4 h-4 text-[#1A56DB]" />
-          {title}
+      <button type="button" onClick={() => setOpen((v) => !v)} className="w-full flex items-center justify-between gap-2 p-5 text-left">
+        <h4 className="flex items-center gap-2 text-sm font-bold text-black">
+          <Icon className="w-4 h-4 text-[#1A56DB]" />{title}
         </h4>
         {open ? <ChevronUp className="w-4 h-4 text-gray-400 flex-shrink-0" /> : <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />}
       </button>
@@ -958,9 +862,7 @@ function UsedCouponsList({ coupons }: { coupons: any[] }) {
         return code.includes(q) || loc.includes(q);
       });
     }
-    if (locationFilter !== "all") {
-      result = result.filter((c) => (c.location || c.subHub || c.area || "") === locationFilter);
-    }
+    if (locationFilter !== "all") result = result.filter((c) => (c.location || c.subHub || c.area || "") === locationFilter);
     result = [...result].sort((a, b) => {
       const aUsed = a.usedCount ?? a.used ?? 0;
       const bUsed = b.usedCount ?? b.used ?? 0;
@@ -979,58 +881,30 @@ function UsedCouponsList({ coupons }: { coupons: any[] }) {
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-[160px]">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search coupons..."
-            className="w-full pl-8 pr-8 py-1.5 text-xs border border-gray-200 rounded-lg bg-white outline-none focus:ring-1 focus:ring-[#1A56DB] focus:border-[#1A56DB]"
-          />
-          {search && (
-            <button onClick={() => setSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-              <X className="w-3 h-3" />
-            </button>
-          )}
+          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search coupons..."
+            className="w-full pl-8 pr-8 py-1.5 text-xs border border-gray-200 rounded-lg bg-white outline-none focus:ring-1 focus:ring-[#1A56DB] text-black" />
+          {search && <button onClick={() => setSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><X className="w-3 h-3" /></button>}
         </div>
-        <select
-          value={sort}
-          onChange={(e) => setSort(e.target.value)}
-          className="h-7 px-2 text-xs border border-gray-200 rounded-lg bg-white text-gray-600 outline-none focus:ring-1 focus:ring-[#1A56DB]"
-        >
+        <select value={sort} onChange={(e) => setSort(e.target.value)}
+          className="h-7 px-2 text-xs border border-gray-200 rounded-lg bg-white text-black outline-none focus:ring-1 focus:ring-[#1A56DB]">
           <option value="used_desc">Most used</option>
           <option value="used_asc">Least used</option>
           <option value="recent">Recently used</option>
           <option value="code_asc">Code (A → Z)</option>
         </select>
         {allLocations.length > 0 && (
-          <select
-            value={locationFilter}
-            onChange={(e) => setLocationFilter(e.target.value)}
-            className="h-7 px-2 text-xs border border-gray-200 rounded-lg bg-white text-gray-600 outline-none focus:ring-1 focus:ring-[#1A56DB]"
-          >
+          <select value={locationFilter} onChange={(e) => setLocationFilter(e.target.value)}
+            className="h-7 px-2 text-xs border border-gray-200 rounded-lg bg-white text-black outline-none focus:ring-1 focus:ring-[#1A56DB]">
             <option value="all">All locations</option>
             {allLocations.map((loc) => <option key={loc} value={loc}>{loc}</option>)}
           </select>
         )}
         <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden bg-white ml-auto">
-          <button
-            onClick={() => setLayout("grid")}
-            className={`w-7 h-7 flex items-center justify-center transition-colors ${layout === "grid" ? "bg-[#162B4D] text-white" : "text-gray-400 hover:bg-gray-50"}`}
-          >
-            <LayoutGrid className="w-3 h-3" />
-          </button>
-          <button
-            onClick={() => setLayout("list")}
-            className={`w-7 h-7 flex items-center justify-center transition-colors ${layout === "list" ? "bg-[#162B4D] text-white" : "text-gray-400 hover:bg-gray-50"}`}
-          >
-            <LayoutList className="w-3 h-3" />
-          </button>
+          <button onClick={() => setLayout("grid")} className={`w-7 h-7 flex items-center justify-center transition-colors ${layout === "grid" ? "bg-[#162B4D] text-white" : "text-black hover:bg-gray-50"}`}><LayoutGrid className="w-3 h-3" /></button>
+          <button onClick={() => setLayout("list")} className={`w-7 h-7 flex items-center justify-center transition-colors ${layout === "list" ? "bg-[#162B4D] text-white" : "text-black hover:bg-gray-50"}`}><LayoutList className="w-3 h-3" /></button>
         </div>
       </div>
-
-      {filtered.length === 0 ? (
-        <EmptyPanel text="No coupons match your search or filters." />
-      ) : (
+      {filtered.length === 0 ? <EmptyPanel text="No coupons match your search." /> : (
         <div className={layout === "grid" ? "grid grid-cols-1 md:grid-cols-2 gap-3" : "space-y-2"}>
           {filtered.map((coupon: any, index: number) => {
             const code = coupon.code || coupon.couponCode || "—";
@@ -1038,45 +912,23 @@ function UsedCouponsList({ coupons }: { coupons: any[] }) {
             const maxAllowed = coupon.maxAllowed ?? coupon.maxUses ?? null;
             const location = coupon.location || coupon.subHub || coupon.area || "";
             const lastUsedAt = coupon.lastUsedAt || coupon.lastUsed || "";
-            const couponId = String(coupon.couponId || coupon._id || "");
             return (
               <div key={index} className="rounded-xl border border-gray-100 bg-white p-4 flex items-start gap-3">
-                <div className="w-9 h-9 rounded-lg bg-green-50 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <Tag className="w-4 h-4 text-green-600" />
-                </div>
+                <div className="w-9 h-9 rounded-lg bg-green-50 flex items-center justify-center flex-shrink-0 mt-0.5"><Tag className="w-4 h-4 text-green-600" /></div>
                 <div className="min-w-0 flex-1 space-y-1.5">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="inline-block bg-green-50 text-green-700 text-sm font-bold px-2.5 py-1 rounded-lg tracking-wider font-mono border border-green-100">
-                      {code}
-                    </span>
-                    <span className="inline-block bg-gray-50 text-gray-600 text-xs font-medium px-2 py-0.5 rounded-full border border-gray-100">
-                      Used {usedCount} time{usedCount !== 1 ? "s" : ""}
-                      {maxAllowed !== null ? ` / ${maxAllowed} max` : ""}
-                    </span>
+                    <span className="inline-block bg-green-50 text-green-700 text-sm font-bold px-2.5 py-1 rounded-lg tracking-wider font-mono border border-green-100">{code}</span>
+                    <span className="inline-block bg-gray-50 text-black text-xs font-medium px-2 py-0.5 rounded-full border border-gray-100">Used {usedCount} time{usedCount !== 1 ? "s" : ""}{maxAllowed !== null ? ` / ${maxAllowed} max` : ""}</span>
                   </div>
-                  {location && (
-                    <div className="flex items-center gap-1 text-xs text-gray-500">
-                      <MapPin className="w-3 h-3 text-gray-400 flex-shrink-0" />
-                      <span>{location}</span>
-                    </div>
-                  )}
-                  {lastUsedAt && (
-                    <div className="flex items-center gap-1 text-xs text-gray-400">
-                      <Clock className="w-3 h-3 flex-shrink-0" />
-                      <span>Last used: {formatDateTime(lastUsedAt)}</span>
-                    </div>
-                  )}
-                  {couponId && <p className="text-[10px] text-gray-300 font-mono">ID: {couponId}</p>}
+                  {location && <div className="flex items-center gap-1 text-xs text-black"><MapPin className="w-3 h-3 text-gray-400 flex-shrink-0" /><span>{location}</span></div>}
+                  {lastUsedAt && <div className="flex items-center gap-1 text-xs text-black"><Clock className="w-3 h-3 flex-shrink-0" /><span>Last used: {formatDateTime(lastUsedAt)}</span></div>}
                 </div>
               </div>
             );
           })}
         </div>
       )}
-
-      {filtered.length < coupons.length && (
-        <p className="text-xs text-gray-400 text-center">Showing {filtered.length} of {coupons.length} coupons</p>
-      )}
+      {filtered.length < coupons.length && <p className="text-xs text-black text-center">Showing {filtered.length} of {coupons.length} coupons</p>}
     </div>
   );
 }
@@ -1084,14 +936,14 @@ function UsedCouponsList({ coupons }: { coupons: any[] }) {
 function InfoRow({ label, value }: { label: string; value: any }) {
   return (
     <div className="rounded-xl bg-gray-50 border border-gray-100 p-3">
-      <p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">{label}</p>
-      <p className="text-sm font-medium text-[#162B4D] mt-1 break-words whitespace-pre-wrap">{stringifyValue(value)}</p>
+      <p className="text-[10px] font-bold uppercase tracking-wide text-black opacity-50">{label}</p>
+      <p className="text-sm font-medium text-black mt-1 break-words whitespace-pre-wrap">{stringifyValue(value)}</p>
     </div>
   );
 }
 
 function EmptyPanel({ text }: { text: string }) {
-  return <div className="rounded-xl border border-dashed border-gray-200 bg-white py-8 text-center text-sm text-gray-400">{text}</div>;
+  return <div className="rounded-xl border border-dashed border-gray-200 bg-white py-8 text-center text-sm text-black">{text}</div>;
 }
 
 function AddressCard({ address, index }: { address: any; index: number }) {
@@ -1100,7 +952,7 @@ function AddressCard({ address, index }: { address: any; index: number }) {
     return (
       <div className="rounded-xl border border-gray-100 bg-white p-4 flex items-start gap-3">
         <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0"><MapPin className="w-4 h-4 text-blue-600" /></div>
-        <p className="text-sm text-gray-700">{address}</p>
+        <p className="text-sm text-black">{address}</p>
       </div>
     );
   }
@@ -1116,7 +968,6 @@ function AddressCard({ address, index }: { address: any; index: number }) {
   const state = address.state || "";
   const pincode = address.pincode || address.zipCode || address.zip || "";
   const instructions = address.instructions || address.deliveryInstructions || "";
-
   const addressLines = [
     [houseNo, building].filter(Boolean).join(", "),
     [street, area].filter(Boolean).join(", "),
@@ -1127,23 +978,13 @@ function AddressCard({ address, index }: { address: any; index: number }) {
   return (
     <div className="rounded-xl border border-gray-100 bg-white p-4">
       <div className="flex items-start gap-3">
-        <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0 mt-0.5">
-          <MapPin className="w-4 h-4 text-blue-600" />
-        </div>
+        <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0 mt-0.5"><MapPin className="w-4 h-4 text-blue-600" /></div>
         <div className="min-w-0 flex-1">
           <span className="inline-block bg-blue-50 text-blue-700 text-xs font-semibold px-2 py-0.5 rounded-full mb-2 capitalize">{label}</span>
-          {contactName && <p className="text-sm font-semibold text-[#162B4D]">{contactName}</p>}
-          {phone && <p className="text-xs text-gray-500 mt-0.5">{phone}</p>}
-          <div className="mt-2 space-y-0.5">
-            {addressLines.map((line, i) => (
-              <p key={i} className="text-sm text-gray-700">{line}</p>
-            ))}
-          </div>
-          {instructions && (
-            <p className="mt-2 text-xs text-amber-700 bg-amber-50 rounded px-2 py-1 border border-amber-100">
-              Delivery note: {instructions}
-            </p>
-          )}
+          {contactName && <p className="text-sm font-semibold text-black">{contactName}</p>}
+          {phone && <p className="text-xs text-black mt-0.5">{phone}</p>}
+          <div className="mt-2 space-y-0.5">{addressLines.map((line, i) => <p key={i} className="text-sm text-black">{line}</p>)}</div>
+          {instructions && <p className="mt-2 text-xs text-amber-700 bg-amber-50 rounded px-2 py-1 border border-amber-100">Delivery note: {instructions}</p>}
         </div>
       </div>
     </div>
@@ -1181,9 +1022,7 @@ function OrderList({ orders, empty }: { orders: any[]; empty: string }) {
         return ref.includes(q) || items.includes(q) || addr.includes(q) || normalize(o.status).includes(q);
       });
     }
-    if (statusFilter !== "all") {
-      result = result.filter((o) => normalize(o.status) === statusFilter);
-    }
+    if (statusFilter !== "all") result = result.filter((o) => normalize(o.status) === statusFilter);
     result = [...result].sort((a, b) => {
       if (sort === "date_asc") return new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
       if (sort === "amount_desc") return getOrderTotal(b) - getOrderTotal(a);
@@ -1201,69 +1040,34 @@ function OrderList({ orders, empty }: { orders: any[]; empty: string }) {
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-[160px]">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search orders..."
-            className="w-full pl-8 pr-8 py-1.5 text-xs border border-gray-200 rounded-lg bg-white outline-none focus:ring-1 focus:ring-[#1A56DB] focus:border-[#1A56DB]"
-          />
-          {search && (
-            <button onClick={() => setSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-              <X className="w-3 h-3" />
-            </button>
-          )}
+          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search orders..."
+            className="w-full pl-8 pr-8 py-1.5 text-xs border border-gray-200 rounded-lg bg-white outline-none focus:ring-1 focus:ring-[#1A56DB] text-black" />
+          {search && <button onClick={() => setSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><X className="w-3 h-3" /></button>}
         </div>
-        <select
-          value={sort}
-          onChange={(e) => setSort(e.target.value)}
-          className="h-7 px-2 text-xs border border-gray-200 rounded-lg bg-white text-gray-600 outline-none focus:ring-1 focus:ring-[#1A56DB]"
-        >
+        <select value={sort} onChange={(e) => setSort(e.target.value)}
+          className="h-7 px-2 text-xs border border-gray-200 rounded-lg bg-white text-black outline-none focus:ring-1 focus:ring-[#1A56DB]">
           {ORDER_SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="h-7 px-2 text-xs border border-gray-200 rounded-lg bg-white text-gray-600 outline-none focus:ring-1 focus:ring-[#1A56DB]"
-        >
+        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
+          className="h-7 px-2 text-xs border border-gray-200 rounded-lg bg-white text-black outline-none focus:ring-1 focus:ring-[#1A56DB]">
           <option value="all">All statuses</option>
           {allStatuses.map((s) => <option key={s} value={s}>{statusLabel(s)}</option>)}
         </select>
         <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden bg-white ml-auto">
-          <button
-            onClick={() => setLayout("list")}
-            className={`w-7 h-7 flex items-center justify-center transition-colors ${layout === "list" ? "bg-[#162B4D] text-white" : "text-gray-400 hover:bg-gray-50"}`}
-          >
-            <LayoutList className="w-3 h-3" />
-          </button>
-          <button
-            onClick={() => setLayout("grid")}
-            className={`w-7 h-7 flex items-center justify-center transition-colors ${layout === "grid" ? "bg-[#162B4D] text-white" : "text-gray-400 hover:bg-gray-50"}`}
-          >
-            <LayoutGrid className="w-3 h-3" />
-          </button>
+          <button onClick={() => setLayout("list")} className={`w-7 h-7 flex items-center justify-center transition-colors ${layout === "list" ? "bg-[#162B4D] text-white" : "text-black hover:bg-gray-50"}`}><LayoutList className="w-3 h-3" /></button>
+          <button onClick={() => setLayout("grid")} className={`w-7 h-7 flex items-center justify-center transition-colors ${layout === "grid" ? "bg-[#162B4D] text-white" : "text-black hover:bg-gray-50"}`}><LayoutGrid className="w-3 h-3" /></button>
         </div>
       </div>
-
-      {filtered.length === 0 ? (
-        <EmptyPanel text="No orders match your search or filters." />
-      ) : layout === "grid" ? (
+      {filtered.length === 0 ? <EmptyPanel text="No orders match your search or filters." /> : layout === "grid" ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {filtered.map((order, index) => (
-            <OrderCardCompact key={getOrderId(order) || index} order={order} index={index} />
-          ))}
+          {filtered.map((order, index) => <OrderCardCompact key={getOrderId(order) || index} order={order} index={index} />)}
         </div>
       ) : (
         <div className="space-y-3">
-          {filtered.map((order, index) => (
-            <OrderCard key={getOrderId(order) || index} order={order} index={index} />
-          ))}
+          {filtered.map((order, index) => <OrderCard key={getOrderId(order) || index} order={order} index={index} />)}
         </div>
       )}
-
-      {filtered.length < orders.length && (
-        <p className="text-xs text-gray-400 text-center">Showing {filtered.length} of {orders.length} orders</p>
-      )}
+      {filtered.length < orders.length && <p className="text-xs text-black text-center">Showing {filtered.length} of {orders.length} orders</p>}
     </div>
   );
 }
@@ -1274,22 +1078,14 @@ function OrderCardCompact({ order, index }: { order: any; index: number }) {
   return (
     <div className="rounded-xl border border-gray-100 bg-white p-3">
       <div className="flex items-start justify-between gap-2 mb-2">
-        <p className="font-bold text-[#162B4D] text-xs flex items-center gap-1.5">
-          <Package className="w-3.5 h-3.5 text-gray-400" />{ref}
-        </p>
-        <span className={`inline-flex border items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold capitalize ${getStatusStyle(order.status)}`}>
-          {statusLabel(order.status)}
-        </span>
+        <p className="font-bold text-black text-xs flex items-center gap-1.5"><Package className="w-3.5 h-3.5 text-gray-400" />{ref}</p>
+        <span className={`inline-flex border items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold capitalize ${getStatusStyle(order.status)}`}>{statusLabel(order.status)}</span>
       </div>
       <div className="flex items-center justify-between">
-        <p className="text-[10px] text-gray-400">{formatDateTime(order.createdAt || order.orderDate)}</p>
-        <span className="text-xs font-bold text-[#162B4D]">{formatRupees(getOrderTotal(order))}</span>
+        <p className="text-[10px] text-black">{formatDateTime(order.createdAt || order.orderDate)}</p>
+        <span className="text-xs font-bold text-black">{formatRupees(getOrderTotal(order))}</span>
       </div>
-      {items.length > 0 && (
-        <p className="text-[10px] text-gray-500 mt-1.5 truncate">
-          {items.map((i: any) => i.name || i.productName || "Item").join(", ")}
-        </p>
-      )}
+      {items.length > 0 && <p className="text-[10px] text-black mt-1.5 truncate">{items.map((i: any) => i.name || i.productName || "Item").join(", ")}</p>}
     </div>
   );
 }
@@ -1308,12 +1104,12 @@ function OrderCard({ order, index }: { order: any; index: number }) {
     <div className="rounded-xl border border-gray-100 bg-white p-4">
       <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
         <div>
-          <p className="font-bold text-[#162B4D] flex items-center gap-2"><Package className="w-4 h-4 text-gray-400" />{ref}</p>
-          <p className="text-xs text-gray-400 mt-1">{formatDateTime(order.createdAt || order.orderDate || order.date)}</p>
+          <p className="font-bold text-black flex items-center gap-2"><Package className="w-4 h-4 text-gray-400" />{ref}</p>
+          <p className="text-xs text-black mt-1">{formatDateTime(order.createdAt || order.orderDate || order.date)}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <span className={`inline-flex border items-center px-2 py-1 rounded-full text-xs font-semibold capitalize ${getStatusStyle(order.status)}`}>{statusLabel(order.status)}</span>
-          <span className="inline-flex border border-gray-200 bg-gray-50 text-gray-600 items-center px-2 py-1 rounded-full text-xs font-semibold">{formatRupees(getOrderTotal(order))}</span>
+          <span className="inline-flex border border-gray-200 bg-gray-50 text-black items-center px-2 py-1 rounded-full text-xs font-semibold">{formatRupees(getOrderTotal(order))}</span>
         </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
@@ -1323,17 +1119,17 @@ function OrderCard({ order, index }: { order: any; index: number }) {
           <OrderMeta icon={CreditCard} label="Payment" value={[order.paymentMethod, order.paymentStatus].filter(Boolean).join(" · ") || "—"} />
         </div>
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-wide text-gray-400 mb-2">Items ({items.length})</p>
+          <p className="text-[10px] font-bold uppercase tracking-wide text-black opacity-50 mb-2">Items ({items.length})</p>
           {items.length ? (
             <div className="space-y-1.5">
               {items.map((item: any, itemIndex: number) => (
                 <div key={itemIndex} className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2 text-xs">
-                  <span className="font-medium text-[#162B4D] break-words">{item.name || item.productName || item.title || `Item ${itemIndex + 1}`}</span>
-                  <span className="text-gray-500 whitespace-nowrap">x{item.quantity ?? 1} · {formatRupees(item.price ?? item.total ?? 0)}</span>
+                  <span className="font-medium text-black break-words">{item.name || item.productName || item.title || `Item ${itemIndex + 1}`}</span>
+                  <span className="text-black whitespace-nowrap">x{item.quantity ?? 1} · {formatRupees(item.price ?? item.total ?? 0)}</span>
                 </div>
               ))}
             </div>
-          ) : <p className="text-xs text-gray-400">No item details saved.</p>}
+          ) : <p className="text-xs text-black">No item details saved.</p>}
         </div>
       </div>
       {order.notes && <p className="mt-3 rounded-lg bg-amber-50 text-amber-700 text-xs p-2">Notes: {order.notes}</p>}
@@ -1343,48 +1139,35 @@ function OrderCard({ order, index }: { order: any; index: number }) {
 
 function OrderMeta({ icon: Icon, label, value }: { icon: any; label: string; value: any }) {
   return (
-    <div className="flex items-start gap-2 text-gray-600">
+    <div className="flex items-start gap-2 text-black">
       <Icon className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
       <div>
-        <p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">{label}</p>
-        <p className="text-sm text-[#162B4D] whitespace-pre-wrap break-words">{stringifyValue(value)}</p>
+        <p className="text-[10px] font-bold uppercase tracking-wide text-black opacity-50">{label}</p>
+        <p className="text-sm text-black whitespace-pre-wrap break-words">{stringifyValue(value)}</p>
       </div>
     </div>
   );
 }
 
 type AddressDraft = {
-  label: string;
-  type: string;
-  name: string;
-  phone: string;
-  building: string;
-  street: string;
-  area: string;
-  pincode: string;
-  instructions: string;
-  isDefault: boolean;
+  label: string; type: string; name: string; phone: string;
+  building: string; street: string; area: string;
+  pincode: string; instructions: string; isDefault: boolean;
 };
 
 function emptyAddress(): AddressDraft {
-  return {
-    label: "Home", type: "house",
-    name: "", phone: "",
-    building: "", street: "", area: "",
-    pincode: "", instructions: "", isDefault: false,
-  };
+  return { label: "Home", type: "house", name: "", phone: "", building: "", street: "", area: "", pincode: "", instructions: "", isDefault: false };
 }
 
 function addressFromExisting(a: any): AddressDraft {
   const existingHouse = a?.houseNo ?? a?.flatNo ?? a?.house ?? a?.apartment ?? "";
   const existingBuilding = a?.building ?? a?.buildingName ?? a?.society ?? "";
-  const combinedBuilding = [existingHouse, existingBuilding].filter(Boolean).join(", ");
   return {
     label: a?.label ?? a?.type ?? "Home",
     type: a?.type ?? "house",
     name: a?.name ?? a?.contactName ?? "",
     phone: a?.phone ?? a?.contactPhone ?? a?.mobile ?? "",
-    building: combinedBuilding,
+    building: [existingHouse, existingBuilding].filter(Boolean).join(", "),
     street: a?.street ?? a?.streetName ?? a?.road ?? a?.addressLine1 ?? "",
     area: a?.area ?? a?.locality ?? a?.neighbourhood ?? "",
     pincode: a?.pincode ?? a?.zipCode ?? a?.zip ?? "",
@@ -1393,17 +1176,11 @@ function addressFromExisting(a: any): AddressDraft {
   };
 }
 
-function CustomerModal({
-  isOpen, onClose, customer, onSuccess,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  customer: Customer | null;
-  onSuccess: () => void;
+function CustomerModal({ isOpen, onClose, customer, onSuccess }: {
+  isOpen: boolean; onClose: () => void; customer: Customer | null; onSuccess: () => void;
 }) {
   const isEditing = !!customer;
   const { toast } = useToast();
-
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -1412,52 +1189,28 @@ function CustomerModal({
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const reset = useCallback(() => {
-    setName(customer?.name ?? "");
-    setEmail(customer?.email ?? "");
-    setPhone(customer?.phone ?? "");
-    setDob(customer?.dateOfBirth ?? "");
-    setAddresses(
-      Array.isArray(customer?.addresses) && customer!.addresses.length
-        ? customer!.addresses.map(addressFromExisting)
-        : []
-    );
+    setName(customer?.name ?? ""); setEmail(customer?.email ?? "");
+    setPhone(customer?.phone ?? ""); setDob(customer?.dateOfBirth ?? "");
+    setAddresses(Array.isArray(customer?.addresses) && customer!.addresses.length ? customer!.addresses.map(addressFromExisting) : []);
     setErrors({});
   }, [customer]);
 
-  useEffect(() => {
-    if (isOpen) reset();
-  }, [isOpen, reset]);
+  useEffect(() => { if (isOpen) reset(); }, [isOpen, reset]);
 
   const createMutation = useMutation({
     mutationFn: (data: Partial<Customer>) => createCustomer(data),
-    onSuccess: () => {
-      toast({ title: "Customer created successfully" });
-      onSuccess();
-      onClose();
-    },
-    onError: (err: any) => {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
-    },
+    onSuccess: () => { toast({ title: "Customer created successfully" }); onSuccess(); onClose(); },
+    onError: (err: any) => { toast({ title: "Error", description: err.message, variant: "destructive" }); },
   });
 
   const updateMutation = useMutation({
     mutationFn: (data: Partial<Customer>) => updateCustomer(customer!.id, data),
-    onSuccess: () => {
-      toast({ title: "Customer updated successfully" });
-      onSuccess();
-      onClose();
-    },
-    onError: (err: any) => {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
-    },
+    onSuccess: () => { toast({ title: "Customer updated successfully" }); onSuccess(); onClose(); },
+    onError: (err: any) => { toast({ title: "Error", description: err.message, variant: "destructive" }); },
   });
 
   const updateAddress = (idx: number, patch: Partial<AddressDraft>) => {
     setAddresses((prev) => prev.map((a, i) => (i === idx ? { ...a, ...patch } : a)));
-  };
-
-  const setDefaultAddress = (idx: number) => {
-    setAddresses((prev) => prev.map((a, i) => ({ ...a, isDefault: i === idx })));
   };
 
   const validate = () => {
@@ -1485,29 +1238,18 @@ function CustomerModal({
   const handleSubmit = () => {
     const e = validate();
     setErrors(e);
-    if (Object.keys(e).length > 0) {
-      toast({ title: "Please fix the highlighted errors", variant: "destructive" });
-      return;
-    }
+    if (Object.keys(e).length > 0) { toast({ title: "Please fix the highlighted errors", variant: "destructive" }); return; }
     const cleanAddresses = addresses
       .map((a) => {
         const out: Record<string, any> = {};
         (Object.keys(a) as (keyof AddressDraft)[]).forEach((k) => {
           const v = a[k];
-          if (typeof v === "string") { if (v.trim()) out[k] = v.trim(); }
-          else if (v) out[k] = v;
+          if (typeof v === "string") { if (v.trim()) out[k] = v.trim(); } else if (v) out[k] = v;
         });
         return out;
       })
       .filter((a) => Object.keys(a).filter((k) => k !== "label" && k !== "type").length > 0);
-
-    const payload: any = {
-      name: name.trim(),
-      email: email.trim(),
-      phone: phone.trim(),
-      dateOfBirth: dob.trim(),
-      addresses: cleanAddresses,
-    };
+    const payload: any = { name: name.trim(), email: email.trim(), phone: phone.trim(), dateOfBirth: dob.trim(), addresses: cleanAddresses };
     if (isEditing) updateMutation.mutate(payload);
     else createMutation.mutate(payload);
   };
@@ -1518,15 +1260,14 @@ function CustomerModal({
     <Dialog open={isOpen} onOpenChange={(v) => { if (!v) { onClose(); reset(); } }}>
       <DialogContent className="sm:max-w-3xl max-h-[92vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-[#162B4D]">{isEditing ? "Edit Customer" : "Add Customer"}</DialogTitle>
+          <DialogTitle className="text-black">{isEditing ? "Edit Customer" : "Add Customer"}</DialogTitle>
           <DialogDescription>
             {isEditing ? "Update the customer's profile, contact info and saved addresses." : "Capture the customer's full profile, contact info and one or more delivery addresses."}
           </DialogDescription>
         </DialogHeader>
-
         <div className="space-y-5 py-2">
           <section className="rounded-xl border border-gray-100 bg-gray-50/40 p-4">
-            <h4 className="text-sm font-bold text-[#162B4D] mb-3 flex items-center gap-2">
+            <h4 className="text-sm font-bold text-black mb-3 flex items-center gap-2">
               <UserRound className="w-4 h-4 text-[#1A56DB]" />Personal details
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -1547,24 +1288,15 @@ function CustomerModal({
 
           <section className="rounded-xl border border-gray-100 bg-gray-50/40 p-4">
             <div className="flex items-center justify-between mb-3">
-              <h4 className="text-sm font-bold text-[#162B4D] flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-[#1A56DB]" />
-                Addresses ({addresses.length})
+              <h4 className="text-sm font-bold text-black flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-[#1A56DB]" />Addresses ({addresses.length})
               </h4>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => setAddresses((prev) => [...prev, emptyAddress()])}
-                className="h-8 gap-1.5 text-xs"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                Add address
+              <Button type="button" size="sm" variant="outline" onClick={() => setAddresses((prev) => [...prev, emptyAddress()])} className="h-8 gap-1.5 text-xs">
+                <Plus className="w-3.5 h-3.5" />Add address
               </Button>
             </div>
-
             {addresses.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-gray-200 bg-white py-6 text-center text-xs text-gray-400">
+              <div className="rounded-lg border border-dashed border-gray-200 bg-white py-6 text-center text-xs text-black">
                 No addresses yet. Click "Add address" to add one or more delivery locations.
               </div>
             ) : (
@@ -1573,23 +1305,12 @@ function CustomerModal({
                   <div key={i} className="rounded-lg border border-gray-200 bg-white p-3">
                     <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-xs font-bold uppercase tracking-wide text-gray-500">Address {i + 1}</span>
-                        {a.isDefault && (
-                          <span className="text-[10px] font-bold uppercase tracking-wide bg-blue-50 text-blue-700 border border-blue-100 px-2 py-0.5 rounded-full">Default</span>
-                        )}
+                        <span className="text-xs font-bold uppercase tracking-wide text-black">Address {i + 1}</span>
+                        {a.isDefault && <span className="text-[10px] font-bold uppercase tracking-wide bg-blue-50 text-blue-700 border border-blue-100 px-2 py-0.5 rounded-full">Default</span>}
                       </div>
                       <div className="flex items-center gap-2">
-                        {!a.isDefault && (
-                          <button type="button" onClick={() => setDefaultAddress(i)} className="text-[11px] text-[#1A56DB] hover:underline font-medium">
-                            Make default
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => setAddresses((prev) => prev.filter((_, j) => j !== i))}
-                          className="w-7 h-7 flex items-center justify-center rounded border border-gray-200 text-gray-500 hover:text-red-500 hover:border-red-200 hover:bg-red-50 transition-colors"
-                          title="Remove address"
-                        >
+                        {!a.isDefault && <button type="button" onClick={() => setAddresses((prev) => prev.map((x, j) => ({ ...x, isDefault: j === i })))} className="text-[11px] text-[#1A56DB] hover:underline font-medium">Make default</button>}
+                        <button type="button" onClick={() => setAddresses((prev) => prev.filter((_, j) => j !== i))} className="w-7 h-7 flex items-center justify-center rounded border border-gray-200 text-black hover:text-red-500 hover:border-red-200 hover:bg-red-50 transition-colors" title="Remove address">
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
@@ -1637,7 +1358,6 @@ function CustomerModal({
             )}
           </section>
         </div>
-
         <DialogFooter>
           <Button variant="outline" onClick={() => { onClose(); reset(); }} disabled={isPending}>Cancel</Button>
           <Button onClick={handleSubmit} disabled={isPending} className="bg-[#1A56DB] hover:bg-[#1447B4] text-white">
@@ -1652,28 +1372,21 @@ function CustomerModal({
 function Field({ label, required, error, children }: { label: string; required?: boolean; error?: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <Label className="text-xs font-medium text-gray-700">
-        {label} {required && <span className="text-red-500">*</span>}
-      </Label>
+      <Label className="text-xs font-medium text-black">{label} {required && <span className="text-red-500">*</span>}</Label>
       {children}
       {error && <p className="text-xs text-red-500">{error}</p>}
     </div>
   );
 }
 
-function DeleteCustomerDialog({
-  customerId, onClose, onConfirm, isPending,
-}: {
-  customerId: string | null;
-  onClose: () => void;
-  onConfirm: () => void;
-  isPending: boolean;
+function DeleteCustomerDialog({ customerId, onClose, onConfirm, isPending }: {
+  customerId: string | null; onClose: () => void; onConfirm: () => void; isPending: boolean;
 }) {
   return (
     <Dialog open={!!customerId} onOpenChange={(v) => { if (!v) onClose(); }}>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle className="text-[#162B4D]">Delete Customer</DialogTitle>
+          <DialogTitle className="text-black">Delete Customer</DialogTitle>
           <DialogDescription>This will permanently remove the customer. This action cannot be undone.</DialogDescription>
         </DialogHeader>
         <DialogFooter>
