@@ -6,7 +6,7 @@ import {
   ArrowUpDown, SlidersHorizontal, X, LayoutGrid, LayoutList,
   MapPin, ShoppingBag, ChevronLeft, ChevronRight, Users,
   Home, Clock, CheckCircle2, ClipboardList, Package,
-  CreditCard, Truck, UserRound, ChevronDown, ChevronUp, Tag,
+  CreditCard, Truck, UserRound, ChevronDown, ChevronUp, Tag, Wallet,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -65,6 +65,7 @@ interface Customer {
   dateOfBirth: string;
   gender?: string;
   notes?: string;
+  walletBalance?: number;
   addresses: any[];
   orders: any[];
   usedCoupons?: any[];
@@ -803,6 +804,12 @@ function CustomerDetailPage({
               <SummaryCard label="All Orders" value={all.length} icon={ClipboardList} color="text-amber-500" />
               <SummaryCard label="Total Spend" value={formatRupees(totalSpend)} icon={CreditCard} color="text-[#F05B4E]" />
             </div>
+            {Number(fullCustomer.walletBalance) > 0 && (
+              <div className="border-t border-blue-100 bg-blue-50 px-6 py-2.5 flex items-center gap-2">
+                <Wallet className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                <span className="text-sm font-semibold text-blue-700">FishTokri Wallet Balance: ₹{Number(fullCustomer.walletBalance).toLocaleString("en-IN")}</span>
+              </div>
+            )}
           </div>
 
           {/* Personal details */}

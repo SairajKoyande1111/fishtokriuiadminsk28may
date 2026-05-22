@@ -672,6 +672,7 @@ export default function Orders() {
   const [deliverPayOpen, setDeliverPayOpen] = useState(false);
   const [deliverPayStatus, setDeliverPayStatus] = useState<"unpaid" | "partial" | "paid">("paid");
   const [deliverPayEntries, setDeliverPayEntries] = useState<{ mode: string; amount: string; reference: string }[]>([]);
+  const [deliverWalletTopup, setDeliverWalletTopup] = useState(true);
 
   // Delivery assignment
   const [deliveryPersons, setDeliveryPersons] = useState<any[]>([]);
@@ -1458,46 +1459,49 @@ export default function Orders() {
       }
     }
 
-    const newPaidTotal = existingPaid + (deliverPayStatus === "unpaid" ? 0 : deliverPayPaidTotal);
-    if (deliverPayStatus === "paid" && newPaidTotal !== orderTotalAmount) {
-      toast({ title: "Payment mismatch", description: `Total paid (${formatRupees(newPaidTotal)}) must equal order total (${formatRupees(orderTotalAmount)}).`, variant: "destructive" });
+    const totalCollected = existingPaid + (deliverPayStatus === "unpaid" ? 0 : deliverPayPaidTotal);
+    const overpayment = Math.max(0, totalCollected - orderTotalAmount);
+    const recordedPaidTotal = Math.min(totalCollected, orderTotalAmount);
+
+    if (deliverPayStatus === "paid" && totalCollected < orderTotalAmount) {
+      toast({ title: "Payment mismatch", description: `Total collected (${formatRupees(totalCollected)}) is less than order total (${formatRupees(orderTotalAmount)}).`, variant: "destructive" });
       return;
     }
-    if (deliverPayStatus === "partial" && (newPaidTotal <= 0 || newPaidTotal >= orderTotalAmount)) {
+    if (deliverPayStatus === "partial" && (totalCollected <= existingPaid || totalCollected >= orderTotalAmount)) {
       toast({ title: "Invalid partial payment", description: `Paid amount must be between ₹0 and ${formatRupees(orderTotalAmount)}.`, variant: "destructive" });
       return;
     }
 
-    const mergedPayments = [
-      ...existingPayments,
-      ...(deliverPayStatus === "unpaid"
-        ? []
-        : deliverPayEntries
-            .filter((p) => p.mode && Number(p.amount) > 0)
-            .map((p) => ({
-              mode: p.mode,
-              amount: Number(p.amount) || 0,
-              reference: p.reference?.trim() || "",
-            }))),
-    ];
+    const newEntries = deliverPayStatus === "unpaid"
+      ? []
+      : deliverPayEntries.filter((p) => p.mode && Number(p.amount) > 0).map((p) => ({
+          mode: p.mode,
+          amount: Number(p.amount) || 0,
+          reference: p.reference?.trim() || "",
+        }));
+    const mergedPayments = [...existingPayments, ...newEntries];
 
     setSavingStatus(true);
     try {
       const payload: any = {
         status: "delivered",
         paymentStatus: deliverPayStatus,
-        paidAmount: newPaidTotal,
+        paidAmount: recordedPaidTotal,
         paymentMode: mergedPayments[0]?.mode,
         payments: mergedPayments,
+        ...(overpayment > 0 && deliverWalletTopup ? { walletTopup: overpayment } : {}),
       };
       await apiFetch(`/api/orders/${selectedOrder._id}`, { method: "PUT", body: JSON.stringify(payload) });
-      toast({ title: "Marked as delivered", description: deliverPayStatus === "paid" ? "Payment recorded." : deliverPayStatus === "partial" ? "Partial payment recorded." : "No payment recorded." });
+      const walletMsg = overpayment > 0 && deliverWalletTopup
+        ? ` ₹${overpayment.toLocaleString("en-IN")} added to customer wallet.`
+        : "";
+      toast({ title: "Marked as delivered", description: (deliverPayStatus === "paid" ? "Payment recorded." : deliverPayStatus === "partial" ? "Partial payment recorded." : "No payment recorded.") + walletMsg });
       setSelectedOrder((o: any) => ({
         ...o,
         status: "delivered",
         paymentStatus: deliverPayStatus,
-        paidAmount: newPaidTotal,
-        dueAmount: Math.max(0, orderTotalAmount - newPaidTotal),
+        paidAmount: recordedPaidTotal,
+        dueAmount: Math.max(0, orderTotalAmount - recordedPaidTotal),
         payments: mergedPayments,
       }));
       setDeliverPayOpen(false);
@@ -2633,13 +2637,21 @@ export default function Orders() {
 
                 {/* ── State A: customer already selected ── */}
                 {chosenCustomer ? (
-                  <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg border border-emerald-200 bg-emerald-50">
-                    <div className="w-8 h-8 rounded-full bg-[#162B4D] flex items-center justify-center text-white text-sm font-bold flex-shrink-0">{chosenCustomer.name?.charAt(0).toUpperCase() || "?"}</div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-[#162B4D] truncate">{chosenCustomer.name}</p>
-                      <p className="text-xs text-gray-400">{chosenCustomer.phone}</p>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg border border-emerald-200 bg-emerald-50">
+                      <div className="w-8 h-8 rounded-full bg-[#162B4D] flex items-center justify-center text-white text-sm font-bold flex-shrink-0">{chosenCustomer.name?.charAt(0).toUpperCase() || "?"}</div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-[#162B4D] truncate">{chosenCustomer.name}</p>
+                        <p className="text-xs text-gray-400">{chosenCustomer.phone}</p>
+                      </div>
+                      <button onClick={() => { setChosenCustomer(null); setSelectedAddressIdx(null); setCustomerSearch(""); setNewCustomer({ name: "", phone: "", email: "", dateOfBirth: "" }); }} className="text-gray-300 hover:text-red-400 flex-shrink-0 p-0.5"><X className="w-3.5 h-3.5" /></button>
                     </div>
-                    <button onClick={() => { setChosenCustomer(null); setSelectedAddressIdx(null); setCustomerSearch(""); setNewCustomer({ name: "", phone: "", email: "", dateOfBirth: "" }); }} className="text-gray-300 hover:text-red-400 flex-shrink-0 p-0.5"><X className="w-3.5 h-3.5" /></button>
+                    {Number(chosenCustomer.walletBalance) > 0 && (
+                      <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-blue-100 bg-blue-50">
+                        <Wallet className="w-3 h-3 text-blue-500 flex-shrink-0" />
+                        <span className="text-xs font-semibold text-blue-700">FishTokri Wallet: ₹{Number(chosenCustomer.walletBalance).toLocaleString("en-IN")}</span>
+                      </div>
+                    )}
                   </div>
 
                 ) : (() => {
@@ -3365,8 +3377,9 @@ export default function Orders() {
               : orderTotal(selectedOrder.items);
             const existingPaid = Number(selectedOrder.paidAmount) || 0;
             const remainingDue = Math.max(0, orderTotalValue - existingPaid);
-            const newPaidTotal = existingPaid + (deliverPayStatus === "unpaid" ? 0 : deliverPayPaidTotal);
-            const newDue = Math.max(0, orderTotalValue - newPaidTotal);
+            const totalCollectedDialog = existingPaid + (deliverPayStatus === "unpaid" ? 0 : deliverPayPaidTotal);
+            const overpaymentDialog = Math.max(0, totalCollectedDialog - orderTotalValue);
+            const newDue = Math.max(0, orderTotalValue - totalCollectedDialog);
 
             return (
               <div className="space-y-4">
@@ -3461,21 +3474,11 @@ export default function Orders() {
                               inputMode="decimal"
                               min={0}
                               value={entry.amount}
-                              onChange={(e) => {
-                                const raw = Number(e.target.value);
-                                const otherSum = deliverPayEntries.reduce(
-                                  (s, p, i) => s + (i === idx ? 0 : Number(p.amount) || 0),
-                                  0
-                                );
-                                const maxAllowed = Math.max(0, remainingDue - otherSum);
-                                let next = e.target.value;
-                                if (Number.isFinite(raw) && raw > maxAllowed) {
-                                  next = String(maxAllowed);
-                                }
+                              onChange={(e) =>
                                 setDeliverPayEntries((arr) =>
-                                  arr.map((p, i) => (i === idx ? { ...p, amount: next } : p))
-                                );
-                              }}
+                                  arr.map((p, i) => (i === idx ? { ...p, amount: e.target.value } : p))
+                                )
+                              }
                               placeholder="Amount"
                               className="pl-6 h-9 text-sm"
                             />
@@ -3515,14 +3518,35 @@ export default function Orders() {
                       </Button>
                       <div className="text-[11px] text-gray-500 flex items-center gap-3">
                         <span>Collecting: <span className="font-semibold text-gray-700">{formatRupees(deliverPayPaidTotal)}</span></span>
-                        <span>
-                          New due:{" "}
-                          <span className={`font-semibold ${newDue > 0 ? "text-amber-600" : "text-emerald-600"}`}>
-                            {formatRupees(newDue)}
+                        {overpaymentDialog === 0 && (
+                          <span>
+                            New due:{" "}
+                            <span className={`font-semibold ${newDue > 0 ? "text-amber-600" : "text-emerald-600"}`}>
+                              {formatRupees(newDue)}
+                            </span>
                           </span>
-                        </span>
+                        )}
                       </div>
                     </div>
+
+                    {overpaymentDialog > 0 && (
+                      <div className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl border border-blue-200 bg-blue-50">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Wallet className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                          <div className="min-w-0">
+                            <p className="text-xs font-semibold text-blue-800">Customer overpaid by {formatRupees(overpaymentDialog)}</p>
+                            <p className="text-[11px] text-blue-600">Add extra to FishTokri Wallet?</p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setDeliverWalletTopup((v) => !v)}
+                          className={`flex-shrink-0 w-10 h-6 rounded-full transition-colors relative ${deliverWalletTopup ? "bg-blue-600" : "bg-gray-300"}`}
+                        >
+                          <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${deliverWalletTopup ? "translate-x-4" : "translate-x-0.5"}`} />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

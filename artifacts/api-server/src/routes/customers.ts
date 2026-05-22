@@ -88,6 +88,7 @@ const customerSchema = new mongoose.Schema(
     gender: String,
     notes: String,
     customerNumber: { type: Number, default: null },
+    walletBalance: { type: Number, default: 0 },
     addresses: { type: Array, default: [] },
     orders: { type: Array, default: [] },
     usedCoupons: { type: Array, default: [] },
@@ -112,6 +113,7 @@ function serializeCustomer(doc: any) {
     dateOfBirth: doc.dateOfBirth ?? "",
     gender: doc.gender ?? "",
     notes: doc.notes ?? "",
+    walletBalance: Number(doc.walletBalance) || 0,
     addresses: doc.addresses ?? [],
     orders: doc.orders ?? [],
     usedCoupons: doc.usedCoupons ?? [],
@@ -462,6 +464,29 @@ router.put("/:id", async (req: ScopedRequest, res) => {
   } catch (err) {
     req.log.error({ err }, "Failed to update customer");
     res.status(500).json({ error: "InternalError", message: "Failed to update customer" });
+  }
+});
+
+// PATCH /api/customers/:id/wallet — add or subtract wallet balance
+router.patch("/:id/wallet", async (req: ScopedRequest, res) => {
+  try {
+    const Customer = await getCustomerModel();
+    const { delta, reason } = req.body;
+    const amount = Number(delta);
+    if (!Number.isFinite(amount) || amount === 0) {
+      res.status(400).json({ error: "InvalidAmount", message: "delta must be a non-zero finite number" }); return;
+    }
+    const customer = await Customer.findById(req.params.id) as any;
+    if (!customer) { res.status(404).json({ error: "NotFound", message: "Customer not found" }); return; }
+    const current = Number(customer.walletBalance) || 0;
+    const newBalance = Math.max(0, current + amount);
+    customer.walletBalance = newBalance;
+    await customer.save();
+    req.log?.info({ customerId: req.params.id, delta: amount, newBalance, reason }, "Wallet adjusted");
+    res.json({ walletBalance: newBalance });
+  } catch (err) {
+    req.log?.error({ err }, "Failed to adjust wallet");
+    res.status(500).json({ error: "InternalError", message: "Failed to adjust wallet" });
   }
 });
 

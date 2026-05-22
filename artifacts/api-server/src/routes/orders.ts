@@ -718,8 +718,9 @@ router.put("/:id", async (req: ScopedRequest, res) => {
       superHubId, superHubName, subHubId, subHubName,
       scheduleType, deliveryDate, timeslotId, timeslotLabel, timeslotStart, timeslotEnd,
       couponId, couponCode, couponTitle, couponIds, couponCodes, coupons,
-      subtotal, discount, slotCharge, total,
+      subtotal, discount, slotCharge, deliveryCharge, total,
       cancellationReason,
+      walletTopup,
     } = req.body;
     if (status !== undefined && !VALID_ORDER_STATUSES.has(String(status))) {
       res.status(400).json({ error: "ValidationError", message: `Invalid order status: ${status}` });
@@ -756,6 +757,7 @@ router.put("/:id", async (req: ScopedRequest, res) => {
     if (subtotal !== undefined) update.subtotal = Number(subtotal) || 0;
     if (discount !== undefined) update.discount = Number(discount) || 0;
     if (slotCharge !== undefined) update.slotCharge = Number(slotCharge) || 0;
+    if (deliveryCharge !== undefined) update.deliveryCharge = Number(deliveryCharge) || 0;
     if (total !== undefined) update.total = Number(total) || 0;
     if (cancellationReason !== undefined) {
       update.cancellationReason = cancellationReason ? String(cancellationReason).trim().slice(0, 500) : "";
@@ -880,6 +882,21 @@ router.put("/:id", async (req: ScopedRequest, res) => {
       }
     } catch (e) {
       req.log.error({ err: e }, "Failed to sync inventory on order update");
+    }
+
+    // If walletTopup is requested (customer overpaid, excess goes to wallet), credit the customer.
+    const walletTopupNum = Math.max(0, Number(walletTopup) || 0);
+    if (walletTopupNum > 0 && (result as any).customerId) {
+      try {
+        const cCol = await getCustomersCollection();
+        await cCol.updateOne(
+          { _id: new mongoose.Types.ObjectId(String((result as any).customerId)) },
+          { $inc: { walletBalance: walletTopupNum } }
+        );
+        req.log.info({ customerId: (result as any).customerId, topup: walletTopupNum }, "Wallet credited from order overpayment");
+      } catch (e) {
+        req.log.error({ err: e }, "Failed to credit wallet from order overpayment");
+      }
     }
 
     // If the payments list was touched, re-sync this order's banking payments.
