@@ -1380,12 +1380,14 @@ function CustomerModal({ isOpen, onClose, customer, onSuccess }: {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [dob, setDob] = useState("");
+  const [walletBalance, setWalletBalance] = useState("");
   const [addresses, setAddresses] = useState<AddressDraft[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const reset = useCallback(() => {
     setName(customer?.name ?? ""); setEmail(customer?.email ?? "");
     setPhone(customer?.phone ?? ""); setDob(customer?.dateOfBirth ?? "");
+    setWalletBalance(String(Number(customer?.walletBalance) || 0));
     setAddresses(Array.isArray(customer?.addresses) && customer!.addresses.length ? customer!.addresses.map(addressFromExisting) : []);
     setErrors({});
   }, [customer]);
@@ -1445,8 +1447,12 @@ function CustomerModal({ isOpen, onClose, customer, onSuccess }: {
       })
       .filter((a) => Object.keys(a).filter((k) => k !== "label" && k !== "type").length > 0);
     const payload: any = { name: name.trim(), email: email.trim(), phone: phone.trim(), dateOfBirth: dob.trim(), addresses: cleanAddresses };
-    if (isEditing) updateMutation.mutate(payload);
-    else createMutation.mutate(payload);
+    if (isEditing) {
+      payload.walletBalance = Math.max(0, Number(walletBalance) || 0);
+      updateMutation.mutate(payload);
+    } else {
+      createMutation.mutate(payload);
+    }
   };
 
   const isPending = createMutation.isPending || updateMutation.isPending;
@@ -1478,6 +1484,23 @@ function CustomerModal({ isOpen, onClose, customer, onSuccess }: {
               <Field label="Date of birth" error={errors.dob}>
                 <Input type="date" value={dob} onChange={(e) => setDob(e.target.value)} className={errors.dob ? "border-red-400" : ""} />
               </Field>
+              {isEditing && (
+                <Field label="Wallet Balance (₹)">
+                  <div className="relative">
+                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400">₹</span>
+                    <Input
+                      type="number"
+                      inputMode="decimal"
+                      min={0}
+                      step="0.01"
+                      value={walletBalance}
+                      onChange={(e) => setWalletBalance(e.target.value)}
+                      placeholder="0"
+                      className="pl-6"
+                    />
+                  </div>
+                </Field>
+              )}
             </div>
           </section>
 

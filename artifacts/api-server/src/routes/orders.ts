@@ -900,18 +900,27 @@ router.put("/:id", async (req: ScopedRequest, res) => {
       req.log.error({ err: e }, "Failed to sync inventory on order update");
     }
 
-    // If walletTopup is requested (customer overpaid, excess goes to wallet), credit the customer.
-    const walletTopupNum = Math.max(0, Number(walletTopup) || 0);
-    if (walletTopupNum > 0 && (result as any).customerId) {
+    // Handle wallet payment entries: when "wallet" mode payments change, apply the delta to customer wallet.
+    // Positive delta = credit (overpayment going to wallet). Negative delta = debit (not typical on update).
+    if (Array.isArray(payments) && (result as any).customerId) {
       try {
-        const cCol = await getCustomersCollection();
-        await cCol.updateOne(
-          { _id: new mongoose.Types.ObjectId(String((result as any).customerId)) },
-          { $inc: { walletBalance: walletTopupNum } }
-        );
-        req.log.info({ customerId: (result as any).customerId, topup: walletTopupNum }, "Wallet credited from order overpayment");
+        const prevWalletTotal = ((prev as any).payments ?? [])
+          .filter((p: any) => p.mode === "wallet")
+          .reduce((s: number, p: any) => s + (Number(p.amount) || 0), 0);
+        const newWalletTotal = ((result as any).payments ?? [])
+          .filter((p: any) => p.mode === "wallet")
+          .reduce((s: number, p: any) => s + (Number(p.amount) || 0), 0);
+        const walletDelta = newWalletTotal - prevWalletTotal;
+        if (walletDelta !== 0) {
+          const cCol = await getCustomersCollection();
+          await cCol.updateOne(
+            { _id: new mongoose.Types.ObjectId(String((result as any).customerId)) },
+            { $inc: { walletBalance: walletDelta } }
+          );
+          req.log.info({ customerId: (result as any).customerId, delta: walletDelta }, "Wallet updated from delivery payment");
+        }
       } catch (e) {
-        req.log.error({ err: e }, "Failed to credit wallet from order overpayment");
+        req.log.error({ err: e }, "Failed to update wallet from delivery payment");
       }
     }
 

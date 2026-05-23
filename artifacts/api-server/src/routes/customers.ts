@@ -458,6 +458,7 @@ router.put("/:id", async (req: ScopedRequest, res) => {
     if (gender !== undefined) (customer as any).gender = gender;
     if (notes !== undefined) (customer as any).notes = notes;
     if (addresses !== undefined) (customer as any).addresses = sanitizeAddresses(addresses);
+    if (walletBalance !== undefined) (customer as any).walletBalance = Math.max(0, Number(walletBalance) || 0);
 
     await customer.save();
     res.json({ customer: serializeCustomer(customer) });
