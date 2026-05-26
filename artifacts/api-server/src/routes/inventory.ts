@@ -166,13 +166,9 @@ async function persistBatches(
   }
 
   // Sync combo isActive based on whether this product's stock is available.
-  if (combosCol && normalized.length > 0) {
-    const allExpired = normalized.every(
-      (b) => b.expiryDate && new Date(b.expiryDate).getTime() < nowMs,
-    );
-
-    if (allExpired) {
-      // All batches expired → deactivate every combo that contains this product.
+  if (combosCol) {
+    if (total === 0) {
+      // Stock is 0 (all batches consumed or expired) → deactivate every combo containing this product.
       const deactivated = await combosCol.updateMany(
         { "includes.productId": String(productId), isActive: true },
         { $set: { isActive: false, updatedAt: new Date() } },
@@ -180,7 +176,7 @@ async function persistBatches(
       if (deactivated.modifiedCount > 0) {
         logger.info(
           { productId: String(productId), combosDeactivated: deactivated.modifiedCount },
-          "persistBatches: all batches expired — deactivated combos containing this product",
+          "persistBatches: stock reached 0 — deactivated combos containing this product",
         );
       }
     } else if (total > 0) {
