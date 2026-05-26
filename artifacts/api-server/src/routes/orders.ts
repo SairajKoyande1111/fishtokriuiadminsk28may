@@ -75,6 +75,32 @@ function toId(id: string): mongoose.mongo.BSON.ObjectId | null {
   try { return new mongoose.mongo.ObjectId(id); } catch { return null; }
 }
 
+/** Returns today's date string in YYYYMMDD format using IST (UTC+5:30). */
+function getTodayIST(): string {
+  const now = new Date();
+  const ist = new Date(now.getTime() + 5.5 * 60 * 60 * 1000);
+  const y = ist.getUTCFullYear();
+  const m = String(ist.getUTCMonth() + 1).padStart(2, "0");
+  const d = String(ist.getUTCDate()).padStart(2, "0");
+  return `${y}${m}${d}`;
+}
+
+/**
+ * Atomically generates the next sequential FishTokri order ID for today.
+ * Format: #FTSYYYYMMDD{N}  e.g. #FTS202605261, #FTS202605262 …
+ * Counter resets each calendar day (IST).
+ */
+async function generateOrderId(db: any): Promise<string> {
+  const dateStr = getTodayIST();
+  const counter = await db.collection("order_id_counters").findOneAndUpdate(
+    { _id: dateStr },
+    { $inc: { seq: 1 } },
+    { upsert: true, returnDocument: "after" },
+  );
+  const seq: number = counter?.seq ?? 1;
+  return `#FTS${dateStr}${seq}`;
+}
+
 // GET /api/orders — list with search, filter, sort, pagination
 router.get("/", async (req: ScopedRequest, res) => {
   try {
@@ -651,6 +677,7 @@ router.post("/", async (req: ScopedRequest, res) => {
     Object.keys(orderDoc).forEach((k) => orderDoc[k] === undefined && delete orderDoc[k]);
 
     const conn = await getOrdersDb();
+    orderDoc.orderId = await generateOrderId(conn.db);
     const result = await conn.db.collection(COLLECTION).insertOne(orderDoc);
 
     // Sync inventory (deduct stock for active orders).

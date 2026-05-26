@@ -2140,6 +2140,9 @@ export default function Orders() {
                         <p className="font-semibold text-black text-sm">{o.customerName}</p>
                         <p className="text-xs text-black">{o.phone}</p>
                         <p className="text-xs text-black mt-1 whitespace-nowrap">{formatDate(o.createdAt)}</p>
+                        {o.orderId && (
+                          <p className="text-[10px] font-mono font-bold text-[#364F9F] mt-0.5">{o.orderId}</p>
+                        )}
                       </td>
                       <td className="px-3 py-4">
                         {items.length === 0 ? (
@@ -3142,7 +3145,12 @@ export default function Orders() {
                       </span>
                     </div>
                     <div className="flex-1 min-w-0 space-y-2.5">
-                      <p className="font-extrabold text-black text-[18px] leading-tight">{selectedOrder.customerName}</p>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-extrabold text-black text-[18px] leading-tight">{selectedOrder.customerName}</p>
+                        {selectedOrder.orderId && (
+                          <span className="font-mono text-[11px] font-bold text-[#364F9F] bg-[#EEF1F9] px-2 py-0.5 rounded-md">{selectedOrder.orderId}</span>
+                        )}
+                      </div>
                       {selectedOrder.phone && (
                         <a href={`tel:${selectedOrder.phone}`} className="flex items-center gap-2.5 text-sm font-semibold text-black hover:text-[#364F9F] transition-colors">
                           <MaskIcon src={iconPhoneCall} color="#364F9F" className="w-[18px] h-[18px] flex-shrink-0" />
