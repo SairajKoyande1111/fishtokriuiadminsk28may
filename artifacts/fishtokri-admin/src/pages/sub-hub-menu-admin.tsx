@@ -63,6 +63,21 @@ function SortableItem({ id, children }: { id: string; children: (handle: React.R
   );
 }
 
+function SortableRow({ id, children }: { id: string; children: (handle: React.ReactNode, isDragging: boolean) => React.ReactNode }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+  const handle = (
+    <span {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing touch-none select-none" title="Drag to reorder">
+      <GripVertical className="w-4 h-4 text-gray-400 hover:text-gray-600 transition-colors" />
+    </span>
+  );
+  return (
+    <tr ref={setNodeRef} style={style} className={isDragging ? "bg-indigo-50 shadow" : "hover:bg-gray-50/50 transition-colors"}>
+      {children(handle, isDragging)}
+    </tr>
+  );
+}
+
 function getToken() {
   return localStorage.getItem("fishtokri_token") ?? "";
 }
@@ -1557,9 +1572,9 @@ function CombosTab({ subHubId, onSetExcel }: { subHubId: string; onSetExcel: (cf
                 </tr></thead>
                 <tbody className="divide-y divide-gray-50">
                   {[...combos].sort((a,b)=>(a.sortOrder??0)-(b.sortOrder??0)).map((c) => (
-                    <SortableItem key={String(c._id)} id={String(c._id)}>
+                    <SortableRow key={String(c._id)} id={String(c._id)}>
                       {(handle) => (
-                        <tr className="hover:bg-gray-50/50 transition-colors">
+                        <>
                           <td className="px-3 py-3">{handle}</td>
                           <td className="px-4 py-3 text-xs font-bold text-gray-400">#{c.sortOrder ?? 0}</td>
                           <td className="px-4 py-3">
@@ -1573,9 +1588,9 @@ function CombosTab({ subHubId, onSetExcel }: { subHubId: string; onSetExcel: (cf
                           <td className="px-4 py-3 text-gray-500 text-xs">{Array.isArray(c.includes) ? c.includes.length : 0}</td>
                           <td className="px-4 py-3"><StatusBadge active={c.isActive !== false} /></td>
                           <td className="px-4 py-3"><ActionButtons onEdit={() => { setEditing(c); setModalOpen(true); }} onDelete={() => setDeleteId(String(c._id))} /></td>
-                        </tr>
+                        </>
                       )}
-                    </SortableItem>
+                    </SortableRow>
                   ))}
                 </tbody>
               </table>
